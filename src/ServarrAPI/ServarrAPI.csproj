@@ -1,22 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <!-- SonarQube needs this -->
     <ProjectGuid>{CEF7BF47-F05C-4131-90B2-757FBC168CAF}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="wwwroot\" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="InfluxDB.Collector" Version="1.1.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
-    <PackageReference Include="Sentry.AspNetCore" Version="3.34.0" />
-    <PackageReference Include="Sentry.Serilog" Version="3.34.0" />
-    <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="FluentMigrator.Runner" Version="3.3.2" />
-    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="3.3.2" />
-    <PackageReference Include="Npgsql" Version="5.0.18" />
-    <PackageReference Include="Octokit" Version="5.0.0" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.170.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Sentry.AspNetCore" Version="5.16.2" />
+    <PackageReference Include="Sentry.Serilog" Version="5.16.2" />
+    <PackageReference Include="Dapper" Version="2.1.66" />
+    <PackageReference Include="FluentMigrator.Runner" Version="7.2.0" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.2.0" />
+    <PackageReference Include="Npgsql" Version="10.0.0" />
+    <PackageReference Include="Octokit" Version="14.0.0" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
 </Project>
