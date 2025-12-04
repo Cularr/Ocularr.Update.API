@@ -260,3 +260,25 @@ paket-files/
 __pycache__/
 *.pyc
 ServarrAPI/Properties/launchSettings\.json
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# GitHub
+.github
+
+# Documentation
+README.md
+LICENSE.md
+
+# Data and temp directories
+data/
+servarrupdate-data/
+pg-init-scripts/
