@@ -13,6 +13,6 @@ namespace ServarrAPI.Model
         public List<string> Fixed { get; set; } = new List<string>();
         public string Branch { get; set; }
 
-        public LazyLoaded<List<UpdateFileEntity>> UpdateFiles { get; set; } = new List<UpdateFileEntity>();
+        public LazyLoaded<List<UpdateFileEntity>> UpdateFiles { get; set; } = new();
     }
 }

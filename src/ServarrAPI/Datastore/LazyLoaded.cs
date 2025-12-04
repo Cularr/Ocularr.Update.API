@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 
 namespace ServarrAPI.Datastore
@@ -7,13 +7,9 @@ namespace ServarrAPI.Datastore
     {
         bool IsLoaded { get; }
         void Prepare(IDatabase database, object parent);
-        void LazyLoad();
+        Task LoadAsync();
     }
 
-    /// <summary>
-    /// Allows a field to be lazy loaded.
-    /// </summary>
-    /// <typeparam name="TChild"></typeparam>
     public class LazyLoaded<TChild> : ILazyLoaded
     {
         protected TChild _value;
@@ -28,64 +24,35 @@ namespace ServarrAPI.Datastore
             IsLoaded = true;
         }
 
-        public TChild Value
-        {
-            get
-            {
-                LazyLoad();
-                return _value;
-            }
-        }
+        public TChild Value => _value;
 
         public bool IsLoaded { get; protected set; }
 
-        public static implicit operator LazyLoaded<TChild>(TChild val)
-        {
-            return new LazyLoaded<TChild>(val);
-        }
+        public static implicit operator LazyLoaded<TChild>(TChild val) => new(val);
 
-        public static implicit operator TChild(LazyLoaded<TChild> lazy)
-        {
-            return lazy.Value;
-        }
+        public static implicit operator TChild(LazyLoaded<TChild> lazy) => lazy.Value;
 
         public virtual void Prepare(IDatabase database, object parent)
         {
         }
 
-        public virtual void LazyLoad()
-        {
-        }
+        public virtual Task LoadAsync() => Task.CompletedTask;
 
-        public object Clone()
-        {
-            return MemberwiseClone();
-        }
+        public object Clone() => MemberwiseClone();
 
-        public bool ShouldSerializeValue()
-        {
-            return IsLoaded;
-        }
+        public bool ShouldSerializeValue() => IsLoaded;
     }
 
-    /// <summary>
-    /// This is the lazy loading proxy.
-    /// </summary>
-    /// <typeparam name="TParent">The parent entity that contains the lazy loaded entity.</typeparam>
-    /// <typeparam name="TChild">The child entity that is being lazy loaded.</typeparam>
     internal class LazyLoaded<TParent, TChild> : LazyLoaded<TChild>
     {
         private readonly Func<IDatabase, TParent, Task<TChild>> _query;
         private readonly Func<TParent, bool> _condition;
-
         private IDatabase _database;
         private TParent _parent;
 
         public LazyLoaded(TChild val)
             : base(val)
         {
-            _value = val;
-            IsLoaded = true;
         }
 
         internal LazyLoaded(Func<IDatabase, TParent, Task<TChild>> query, Func<TParent, bool> condition = null)
@@ -94,15 +61,9 @@ namespace ServarrAPI.Datastore
             _condition = condition;
         }
 
-        public static implicit operator LazyLoaded<TParent, TChild>(TChild val)
-        {
-            return new LazyLoaded<TParent, TChild>(val);
-        }
+        public static implicit operator LazyLoaded<TParent, TChild>(TChild val) => new(val);
 
-        public static implicit operator TChild(LazyLoaded<TParent, TChild> lazy)
-        {
-            return lazy.Value;
-        }
+        public static implicit operator TChild(LazyLoaded<TParent, TChild> lazy) => lazy.Value;
 
         public override void Prepare(IDatabase database, object parent)
         {
@@ -110,27 +71,27 @@ namespace ServarrAPI.Datastore
             _parent = (TParent)parent;
         }
 
-        public override void LazyLoad()
+        public override async Task LoadAsync()
         {
-            if (!IsLoaded)
+            if (IsLoaded)
             {
-                if (_condition != null && _condition(_parent))
-                {
-                    if (SqlBuilderExtensions.LogSql)
-                    {
-                        // Logger.Trace($"Lazy loading {typeof(TChild)} for {typeof(TParent)}");
-                        // Logger.Trace("StackTrace: '{0}'", Environment.StackTrace);
-                    }
-
-                    _value = _query(_database, _parent).Result;
-                }
-                else
-                {
-                    _value = default;
-                }
-
-                IsLoaded = true;
+                return;
             }
+
+            _value = _condition != null && _condition(_parent)
+                ? await _query(_database, _parent).ConfigureAwait(false)
+                : default;
+
+            IsLoaded = true;
+        }
+    }
+
+    public static class LazyLoadedExtensions
+    {
+        public static async Task<TChild> LoadAsync<TChild>(this LazyLoaded<TChild> lazyLoaded)
+        {
+            await lazyLoaded.LoadAsync().ConfigureAwait(false);
+            return lazyLoaded.Value;
         }
     }
 }

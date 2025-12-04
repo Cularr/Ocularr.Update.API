@@ -6,6 +6,7 @@ using InfluxDB.Collector;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
+using ServarrAPI.Datastore;
 using ServarrAPI.Model;
 using ServarrAPI.Util;
 using Architecture = System.Runtime.InteropServices.Architecture;
@@ -42,6 +43,7 @@ namespace ServarrAPI.Controllers.Update
 
             foreach (var updateFile in updateFiles)
             {
+                await updateFile.Update.LoadAsync();
                 var update = updateFile.Update.Value;
                 UpdateChanges updateChanges = null;
 
@@ -133,6 +135,7 @@ namespace ServarrAPI.Controllers.Update
                 };
             }
 
+            await updateFile.Update.LoadAsync();
             var update = updateFile.Update.Value;
 
             // Compare given version and update version
