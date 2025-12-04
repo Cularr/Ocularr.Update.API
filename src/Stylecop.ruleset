@@ -5,6 +5,7 @@
   </Rules>
   <Rules AnalyzerId="StyleCop.CSharp.SpacingRules"
          RuleNamespace="StyleCop.CSharp.SpacingRules">
+    <Rule Id="SA1000" Action="None" />
     <Rule Id="SA1005" Action="None" />
     <Rule Id="SA1025" Action="None" />
   </Rules>
@@ -17,6 +18,7 @@
   </Rules>
   <Rules AnalyzerId="StyleCop.CSharp.OrderingRules"
          RuleNamespace="StyleCop.CSharp.OrderingRules">
+    <Rule Id="SA1200" Action="None" />
     <Rule Id="SA1201" Action="Info" />
     <Rule Id="SA1202" Action="Info" />
     <Rule Id="SA1204" Action="Info" />
