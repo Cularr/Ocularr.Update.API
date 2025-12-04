@@ -16,9 +16,9 @@ namespace ServarrAPI.Release.Github
 {
     public class GithubReleaseSource : ReleaseSourceBase
     {
-        private static readonly Regex ReleaseFeaturesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+(?:New:|\(?feat\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFeaturesGroup = new(@"\*\s+[0-9a-f]{40}\s+(?:New:|\(?feat\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
-        private static readonly Regex ReleaseFixesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+(?:Fix(?:ed)?:|\(?fix\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFixesGroup = new(@"\*\s+[0-9a-f]{40}\s+(?:Fix(?:ed)?:|\(?fix\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
         private readonly Config _config;
         private readonly IUpdateService _updateService;
@@ -33,8 +33,16 @@ namespace ServarrAPI.Release.Github
             _updateService = updateService;
             _updateFileService = updateFileService;
             _config = config.Value;
-            _gitHubClient = new GitHubClient(new ProductHeaderValue("ServarrAPI"));
+
+            var productHeader = new ProductHeaderValue("ServarrAPI");
+            _gitHubClient = new GitHubClient(productHeader);
             _httpClient = new HttpClient();
+            if (!string.IsNullOrWhiteSpace(_config.GithubToken))
+            {
+                _gitHubClient.Credentials = new Credentials(_config.GithubToken);
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"token {_config.GithubToken}");
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "ServarrAPI");
+            }
         }
 
         protected override async Task<List<string>> DoFetchReleasesAsync()
