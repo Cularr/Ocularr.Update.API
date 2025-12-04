@@ -1,15 +1,12 @@
-# Servarr Update Server
+# Ocularr Update API
 
-[![Build Status](https://dev.azure.com/Servarr/Servarr/_apis/build/status/Servarr.ServarrAPI.Update?branchName=master)](https://dev.azure.com/Servarr/Servarr/_build/latest?definitionId=5&branchName=master)
-
-This is the update API of [Lidarr](https://github.com/Lidarr/Lidarr), [Prowlarr](https://github.com/Prowlarr/Prowlarr), [Radarr](https://github.com/Radarr/Radarr), and [Readarr](https://github.com/Readarr/Readarr).
+This is the update API for Ocularr. Forked from [Servarr](https://github.com/Servarr/ServarrAPI.Update).
 
 ## Development
 
-If you want to work on **ServarrAPI.Update**, make sure you have [.NET 6.0 SDK](https://dotnet.microsoft.com/download/dotnet/6.0) installed and [Visual Studio 2022](https://www.visualstudio.com/vs).
+If you want to work on **Ocularr Update API**, make sure you have [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) installed and [Visual Studio 2022](https://www.visualstudio.com/vs).
 
 ## Using Docker
-
 If you would like to use the docker setup we have for this project, follow these directions:
 - Setup Environment Variables
 	- Make sure you set an environment variable PRIOR to running docker-compose up called `MYSQL_ROOT_PASSWORD` OR
