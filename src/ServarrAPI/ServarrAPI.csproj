@@ -4,7 +4,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <PlatformTarget>x64</PlatformTarget>
     <ProjectGuid>{CEF7BF47-F05C-4131-90B2-757FBC168CAF}</ProjectGuid>
+    
+    <!-- Version and Build Information -->
+    <Version Condition="'$(Version)' == ''">1.0.0</Version>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(Version)</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(Version)</FileVersion>
+    <Branch Condition="'$(Branch)' == ''">local</Branch>
+    <GitCommit Condition="'$(GitCommit)' == ''">unknown</GitCommit>
+    <GitTag Condition="'$(GitTag)' == ''"></GitTag>
+    <RepoUrl Condition="'$(RepoUrl)' == ''">https://github.com/Cularr/Ocularr.Update.API</RepoUrl>
+    <Author Condition="'$(Author)' == ''">Cularr</Author>
+    <CI Condition="'$(CI)' == ''">false</CI>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="InfluxDB.Collector" Version="1.1.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
@@ -18,4 +30,7 @@
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
+  
+  <!-- Import the ApiInfo.targets to generate version info -->
+  <Import Project="../ApiInfo.targets" />
 </Project>

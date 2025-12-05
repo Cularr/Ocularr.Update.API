@@ -1,0 +1,30 @@
+<Project>
+	<!-- Generate ApiInfo file with build-time metadata -->
+	<Target Name="GenerateApiInfoFile" BeforeTargets="CoreCompile">
+		<PropertyGroup>
+			<ApiInfoFile>$(IntermediateOutputPath)ApiInfo.cs</ApiInfoFile>
+		</PropertyGroup>
+		<ItemGroup>
+			<Compile Include="$(ApiInfoFile)" />
+		</ItemGroup>
+		<WriteLinesToFile
+			File="$(ApiInfoFile)"
+			Lines="namespace ServarrAPI
+{
+    public static class ApiInfo
+    {
+        public const string Version = &quot;$(Version)&quot;%3B
+        public const string AssemblyVersion = &quot;$(AssemblyVersion)&quot;%3B
+        public const string Branch = &quot;$(Branch)&quot;%3B
+        public const string GitCommit = &quot;$(GitCommit)&quot;%3B
+        public const string GitTag = &quot;$(GitTag)&quot;%3B
+        public const string RepoUrl = &quot;$(RepoUrl)&quot;%3B
+        public const string Author = &quot;$(Author)&quot;%3B
+        public const string BuildDate = &quot;$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd HH:mm:ss UTC&quot;))&quot;%3B
+        public const bool CI = $(CI)%3B
+    }
+}"
+			Encoding="UTF-8"
+			Overwrite="true" />
+	</Target>
+</Project>

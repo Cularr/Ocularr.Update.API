@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+      - 'v*'
   workflow_dispatch:
 
 env:
@@ -20,6 +21,58 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version and git info
+        id: git_info
+        run: |
+          # Fetch all tags and branches
+          git fetch --prune --unshallow || git fetch --prune
+          git fetch --tags --force
+          
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            VERSION=${TAG_NAME#v}
+            
+            # Try to extract branch from tag (format: v1.0.0-branch)
+            if [[ "$TAG_NAME" == *-* ]]; then
+              VERSION_ONLY=${TAG_NAME%%-*}
+              VERSION=${VERSION_ONLY#v}
+              BRANCH=${TAG_NAME#*-}
+              echo "Detected branch from tag: $BRANCH"
+            else
+              VERSION=${VERSION%%-*}
+              # Find branch containing this tag
+              BRANCH=$(git branch -r --contains $TAG_NAME | grep -v HEAD | sed 's|.*origin/||' | head -n 1)
+              if [ -z "$BRANCH" ]; then
+                BRANCH="master"
+              fi
+              echo "Detected branch from git: $BRANCH"
+            fi
+            
+            TAG=$TAG_NAME
+          else
+            VERSION="1.0.0-dev"
+            BRANCH=${GITHUB_REF#refs/heads/}
+            TAG=""
+          fi
+          
+          COMMIT=$(git rev-parse --short HEAD)
+          REPO_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "repo_url=$REPO_URL" >> $GITHUB_OUTPUT
+          
+          echo "Extracted metadata:"
+          echo "  Version: $VERSION"
+          echo "  Branch: $BRANCH"
+          echo "  Commit: $COMMIT"
+          echo "  Tag: $TAG"
+          echo "  Repo: $REPO_URL"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -31,7 +84,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
+      - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -41,6 +94,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ steps.git_info.outputs.branch }},enable=true
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -49,6 +103,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.git_info.outputs.version }}
+            BRANCH=${{ steps.git_info.outputs.branch }}
+            GIT_COMMIT=${{ steps.git_info.outputs.commit }}
+            GIT_TAG=${{ steps.git_info.outputs.tag }}
+            REPO_URL=${{ steps.git_info.outputs.repo_url }}
+            AUTHOR=${{ github.repository_owner }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -58,18 +119,23 @@ jobs:
         with:
           generate_release_notes: true
           body: |
-            ## Docker Image
+            ## 🐳 Docker Image
 
             Pull the Docker image:
             ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_info.outputs.version }}
             ```
 
-            Or use docker-compose:
+            Or for the branch-specific image:
             ```bash
-            export VERSION=${{ steps.meta.outputs.version }}
-            docker-compose up -d
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_info.outputs.branch }}
             ```
+
+            ## 📦 Build Information
+            - **Version:** ${{ steps.git_info.outputs.version }}
+            - **Branch:** ${{ steps.git_info.outputs.branch }}
+            - **Commit:** ${{ steps.git_info.outputs.commit }}
+            - **Repository:** ${{ steps.git_info.outputs.repo_url }}
 
             ## What's Changed
             See the commit history for details.
