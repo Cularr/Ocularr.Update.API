@@ -26,5 +26,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=sdk /app/_output/net10.0/publish/. ./
 
+# Expose port
+EXPOSE 5000/tcp
+
 # Docker Entry
 ENTRYPOINT ["dotnet", "ServarrAPI.dll"]

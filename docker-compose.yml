@@ -20,29 +20,21 @@ services:
       - ./pg-init-scripts:/docker-entrypoint-initdb.d
 
   ocularr-api:
-    image: ghcr.io/${GITHUB_REPOSITORY:-yourusername/ocularr-update-api}:${VERSION:-latest}
-    build: .
+    image: ghcr.io/cularr/ocularr.update.api:latest
     restart: always
     ports:
       - "5000:5000"
     depends_on:
       - db
     environment:
-      # GitHub Configuration
+      # GitHub Configuration (required)
       - Update__GithubOrg=${GITHUB_ORG}
       - Update__GithubToken=${GITHUB_TOKEN}
-      - Update__Project=${PROJECT:-Ocularr}
 
-      # API Configuration
+      # API Configuration (required)
       - Update__ApiKey=${UPDATE_API_KEY}
-      - Update__DataDirectory=/data
-      - Update__LogSql=false
 
       # Database Connection
       - ConnectionStrings__Database=Host=db;Port=5432;Username=${DB_USER:-ocularr};Password=${DB_PASSWORD:?Set DB_PASSWORD};Database=${DB_NAME:-ocularr};Enlist=false
-
-      # ASP.NET Core
-      - ASPNETCORE_URLS=http://0.0.0.0:5000
-      - ASPNETCORE_ENVIRONMENT=Production
     volumes:
       - ./data:/data
