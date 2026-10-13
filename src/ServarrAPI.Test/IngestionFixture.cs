@@ -164,13 +164,13 @@ namespace ServarrAPI.Test
         private async Task<List<string>> Fetch()
         {
             using var scope = _factory.Services.CreateScope();
-            return await scope.ServiceProvider.GetRequiredService<GithubReleaseSource>().StartFetchReleasesAsync();
+            return await scope.ServiceProvider.GetRequiredService<GithubReleaseSource>().FetchReleasesAsync();
         }
 
         private async Task Refresh()
         {
             using var scope = _factory.Services.CreateScope();
-            await scope.ServiceProvider.GetRequiredService<ReleaseService>().UpdateReleasesAsync(typeof(GithubReleaseSource));
+            await scope.ServiceProvider.GetRequiredService<GithubReleaseSource>().FetchReleasesAsync();
         }
 
         private async Task<string> Latest(string branch, HttpClient client = null)

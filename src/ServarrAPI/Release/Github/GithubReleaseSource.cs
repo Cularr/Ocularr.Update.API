@@ -14,7 +14,7 @@ using ServarrAPI.Util;
 
 namespace ServarrAPI.Release.Github
 {
-    public class GithubReleaseSource : ReleaseSourceBase
+    public class GithubReleaseSource
     {
         private static readonly Regex ReleaseFeaturesGroup = new(@"^\*\s+(?:[0-9a-f]{40}\s+)?(?:New:|\(?feat(?:\([^)]*\))?\)?!?:)\s*(?<text>.*?)(?:\s+by\s+@\S+\s+in\s+https://\S+)?\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
@@ -64,7 +64,7 @@ namespace ServarrAPI.Release.Github
             }
         }
 
-        protected override async Task<List<string>> DoFetchReleasesAsync()
+        public async Task<List<string>> FetchReleasesAsync()
         {
             var updated = new HashSet<string>();
 

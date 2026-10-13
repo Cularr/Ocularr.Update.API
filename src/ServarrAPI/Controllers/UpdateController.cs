@@ -9,7 +9,6 @@ using Microsoft.Net.Http.Headers;
 using ServarrAPI.Datastore;
 using ServarrAPI.Model;
 using ServarrAPI.Release;
-using ServarrAPI.Release.Github;
 using ServarrAPI.Stats;
 using ServarrAPI.TaskQueue;
 using ServarrAPI.Util;
@@ -41,7 +40,7 @@ namespace ServarrAPI.Controllers.Update
         [ApiKey]
         public IActionResult Publish()
         {
-            ReleaseRefreshService.QueueRefresh(_queue, _serviceScopeFactory, typeof(GithubReleaseSource));
+            ReleaseRefreshService.QueueRefresh(_queue, _serviceScopeFactory);
 
             return Accepted();
         }

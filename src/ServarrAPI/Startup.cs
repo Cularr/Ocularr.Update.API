@@ -10,13 +10,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Serilog;
-using ServarrAPI.Cloudflare;
 using ServarrAPI.Datastore;
 using ServarrAPI.Datastore.Migration.Framework;
 using ServarrAPI.Model;
 using ServarrAPI.OAuth;
 using ServarrAPI.Release;
-using ServarrAPI.Release.Azure;
 using ServarrAPI.Release.Github;
 using ServarrAPI.Stats;
 using ServarrAPI.TaskQueue;
@@ -65,15 +63,12 @@ namespace ServarrAPI
             services.AddSingleton<IUpdateFileService, UpdateFileService>();
             services.AddSingleton<INotificationRepository, NotificationRepository>();
             services.AddSingleton<INotificationService, NotificationService>();
-            services.AddSingleton<ICloudflareProxy, CloudflareProxy>();
             services.AddSingleton(x => GithubReleaseSource.CreateClient(x.GetRequiredService<IOptions<Config>>().Value));
             services.AddHttpClient(nameof(GithubReleaseSource), (x, client) => GithubReleaseSource.ConfigureDownloads(client, x.GetRequiredService<IOptions<Config>>().Value));
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddSingleton<IUsageStats, UsageStats>();
 
-            services.AddTransient<ReleaseService>();
             services.AddTransient<GithubReleaseSource>();
-            services.AddTransient<AzureReleaseSource>();
 
             services.AddHostedService<QueuedHostedService>();
             services.AddHostedService<ReleaseRefreshService>();

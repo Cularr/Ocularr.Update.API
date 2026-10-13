@@ -28,8 +28,6 @@
     <PackageReference Include="FluentMigrator.Runner.Postgres" Version="7.2.0" />
     <PackageReference Include="Npgsql" Version="10.0.0" />
     <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
   
   <!-- Import the ApiInfo.targets to generate version info -->

@@ -22,14 +22,12 @@ namespace ServarrAPI.Release
             _config = config.Value;
         }
 
-        public static void QueueRefresh(IBackgroundTaskQueue queue, IServiceScopeFactory serviceScopeFactory, Type releaseSource)
+        public static void QueueRefresh(IBackgroundTaskQueue queue, IServiceScopeFactory serviceScopeFactory)
         {
             queue.QueueBackgroundWorkItem(async token =>
             {
                 using var scope = serviceScopeFactory.CreateScope();
-                var releaseService = scope.ServiceProvider.GetRequiredService<ReleaseService>();
-
-                await releaseService.UpdateReleasesAsync(releaseSource);
+                await scope.ServiceProvider.GetRequiredService<GithubReleaseSource>().FetchReleasesAsync();
             });
         }
 
@@ -44,7 +42,7 @@ namespace ServarrAPI.Release
 
             do
             {
-                QueueRefresh(_queue, _serviceScopeFactory, typeof(GithubReleaseSource));
+                QueueRefresh(_queue, _serviceScopeFactory);
             }
             while (await timer.WaitForNextTickAsync(stoppingToken));
         }
