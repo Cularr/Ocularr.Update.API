@@ -23,7 +23,11 @@ services:
     image: ghcr.io/cularr/ocularr.update.api:latest
     restart: always
     ports:
-      - "5000:5000"
+      # For a reverse proxy on this host. A proxy in another container uses
+      # ocularr-api:5000 on a shared network instead. Forwarded headers are trusted
+      # from anything that can reach this port, so the proxy must overwrite
+      # X-Forwarded-For. Without a proxy, set FORWARDED_HEADERS_ENABLED=false.
+      - "127.0.0.1:5000:5000"
     depends_on:
       - db
     environment:
@@ -36,5 +40,11 @@ services:
 
       # Database Connection
       - ConnectionStrings__Database=Host=db;Port=5432;Username=${DB_USER:-ocularr};Password=${DB_PASSWORD:?Set DB_PASSWORD};Database=${DB_NAME:-ocularr};Enlist=false
+
+      - Stats__Url=${STATS_URL:-}
+      - Stats__Token=${STATS_TOKEN:-}
+      - Stats__Org=${STATS_ORG:-}
+      - Stats__Bucket=${STATS_BUCKET:-telegraf}
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=${FORWARDED_HEADERS_ENABLED:-true}
     volumes:
       - ./data:/data

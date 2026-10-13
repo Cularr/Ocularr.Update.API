@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using InfluxDB.Collector;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +14,7 @@ using ServarrAPI.Model;
 using ServarrAPI.Release;
 using ServarrAPI.Release.Azure;
 using ServarrAPI.Release.Github;
+using ServarrAPI.Stats;
 using ServarrAPI.TaskQueue;
 
 namespace ServarrAPI
@@ -40,8 +40,6 @@ namespace ServarrAPI
             APIKey         : {ConfigServarr.ApiKey}");
 
             SetupDataDirectory();
-
-            SetupTelegraf();
         }
 
         public IConfiguration Config { get; }
@@ -52,6 +50,7 @@ namespace ServarrAPI
         public void ConfigureServices(IServiceCollection services)
         {
             services.Configure<Config>(Config.GetSection("Update"));
+            services.Configure<StatsOptions>(Config.GetSection("Stats"));
 
             services.AddSingleton<IMigrationController, MigrationController>();
             services.AddSingleton<IDatabase, Database>();
@@ -64,6 +63,7 @@ namespace ServarrAPI
             services.AddSingleton<ICloudflareProxy, CloudflareProxy>();
             services.AddSingleton(new GitHubClient(new ProductHeaderValue("ServarrAPI")));
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+            services.AddSingleton<IUsageStats, UsageStats>();
 
             services.AddTransient<ReleaseService>();
             services.AddTransient<GithubReleaseSource>();
@@ -108,23 +108,6 @@ namespace ServarrAPI
 
             // Create
             Directory.CreateDirectory(ConfigServarr.DataDirectory);
-        }
-
-        private void SetupTelegraf()
-        {
-            var server = Config.GetSection("Stats")["Server"];
-            var port = Config.GetSection("Stats").GetValue<int>("Port");
-
-            if (string.IsNullOrWhiteSpace(server) || port == 0)
-            {
-                return;
-            }
-
-            Metrics.Collector = new CollectorConfiguration()
-                .Tag.With("application_path", Environment.GetEnvironmentVariable("SERVICE_HOSTNAME"))
-                .Batch.AtInterval(TimeSpan.FromSeconds(2))
-                .WriteTo.InfluxDB(string.Format("http://{0}:{1}", server, port), "telegraf")
-                .CreateCollector();
         }
     }
 }

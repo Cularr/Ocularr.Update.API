@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using InfluxDB.Collector;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using ServarrAPI.Datastore;
 using ServarrAPI.Model;
+using ServarrAPI.Stats;
 using ServarrAPI.Util;
 using Architecture = System.Runtime.InteropServices.Architecture;
 using OperatingSystem = ServarrAPI.Model.OperatingSystem;
@@ -18,11 +18,13 @@ namespace ServarrAPI.Controllers.Update
     public class UpdateController : Controller
     {
         private readonly IUpdateFileService _updateFileService;
+        private readonly IUsageStats _usageStats;
         private readonly string _project;
 
-        public UpdateController(IUpdateFileService updateFileService, IOptions<Config> config)
+        public UpdateController(IUpdateFileService updateFileService, IUsageStats usageStats, IOptions<Config> config)
         {
             _updateFileService = updateFileService;
+            _usageStats = usageStats;
             _project = config.Value.Project;
         }
 
@@ -81,7 +83,7 @@ namespace ServarrAPI.Controllers.Update
                                              [FromQuery(Name = "arch")] Architecture arch,
                                              [FromQuery(Name = "includeMajorVersion")] bool includeMajorVersion = false,
                                              [FromQuery(Name = "dbType")] string dbType = "SQLite",
-                                             [FromQuery(Name = "active")] bool activeInstall = true)
+                                             [FromQuery(Name = "active")] bool? activeInstall = null)
         {
             Response.Headers[HeaderNames.CacheControl] = GetCacheControlHeader(DateTime.UtcNow);
 
@@ -97,15 +99,11 @@ namespace ServarrAPI.Controllers.Update
             var userAgentInfo = new UserAgentInfo(Request.Headers["User-Agent"].ToString());
 
             // Dont' send metrics for dev/debug instances
-            if (version.Major < 10)
+            if (version.Major < 10 && activeInstall.HasValue)
             {
                 var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
 
-                Metrics.Write("userstats",
-                    new Dictionary<string, object>
-                    {
-                        { "source", remoteIpAddress }
-                    },
+                _usageStats.Write(remoteIpAddress?.ToString(),
                     new Dictionary<string, string>
                     {
                         { "program", _project },
@@ -118,7 +116,7 @@ namespace ServarrAPI.Controllers.Update
                         { "runtime", runtime.ToString() },
                         { "runtimeVersion", urlRuntimeVersion },
                         { "arch", arch.ToString() },
-                        { "activeinstall", activeInstall.ToString() },
+                        { "activeinstall", activeInstall.Value.ToString() },
                         { "dbType", dbType }
                     });
             }
