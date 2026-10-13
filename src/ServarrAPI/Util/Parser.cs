@@ -22,10 +22,25 @@ namespace ServarrAPI.Util
 
         public static readonly Regex ArchRegex = new Regex(@"core-(?<arch>x86|x64|arm|arm64)(-installer)?\.", RegexOptions.Compiled);
 
-        public static readonly Regex InstallerRegex = new Regex(@"installer\.exe|osx-app", RegexOptions.Compiled);
+        public static readonly Regex InstallerRegex = new Regex(@"installer\.exe|osx-app|-app\.zip$", RegexOptions.Compiled);
+
+        public static readonly Regex RidAsset = new Regex(@"\.(?<os>linux-musl|linux|osx|win|freebsd)-(?<arch>x86|x64|arm64|arm)(?:-installer\.exe|-app\.zip|\.tar\.gz|\.zip)$", RegexOptions.Compiled);
 
         public static OperatingSystem? ParseOS(string file)
         {
+            var rid = RidAsset.Match(file);
+            if (rid.Success)
+            {
+                return rid.Groups["os"].Value switch
+                {
+                    "win" => OperatingSystem.Windows,
+                    "linux" => OperatingSystem.Linux,
+                    "linux-musl" => OperatingSystem.LinuxMusl,
+                    "osx" => OperatingSystem.Osx,
+                    _ => OperatingSystem.Bsd
+                };
+            }
+
             if (WindowsAsset.IsMatch(file))
             {
                 return OperatingSystem.Windows;
@@ -52,7 +67,7 @@ namespace ServarrAPI.Util
 
         public static Runtime ParseRuntime(string file)
         {
-            return NetCoreAsset.IsMatch(file) ? Runtime.NetCore : Runtime.DotNet;
+            return NetCoreAsset.IsMatch(file) || RidAsset.IsMatch(file) ? Runtime.NetCore : Runtime.DotNet;
         }
 
         public static bool ParseInstaller(string file)
@@ -62,7 +77,12 @@ namespace ServarrAPI.Util
 
         public static Architecture ParseArchitecture(string file)
         {
-            var match = ArchRegex.Match(file);
+            var match = RidAsset.Match(file);
+
+            if (!match.Success)
+            {
+                match = ArchRegex.Match(file);
+            }
 
             if (!match.Success)
             {

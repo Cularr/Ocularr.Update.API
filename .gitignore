@@ -261,3 +261,4 @@ paket-files/
 __pycache__/
 *.pyc
 src/ServarrAPI/Properties/launchSettings\.json
+_tests/
