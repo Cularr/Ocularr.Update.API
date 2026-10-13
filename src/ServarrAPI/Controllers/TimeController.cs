@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ServarrAPI.Controllers
 {
-    [Route("[controller]")]
+    [Route("v1/[controller]")]
     public class TimeController
     {
         [HttpGet]

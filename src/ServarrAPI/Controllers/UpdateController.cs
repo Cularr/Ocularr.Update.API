@@ -14,7 +14,7 @@ using OperatingSystem = ServarrAPI.Model.OperatingSystem;
 
 namespace ServarrAPI.Controllers.Update
 {
-    [Route("[controller]")]
+    [Route("v1/[controller]")]
     public class UpdateController : Controller
     {
         private readonly IUpdateFileService _updateFileService;

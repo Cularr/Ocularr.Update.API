@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 namespace ServarrAPI.Controllers
 {
     [ApiController]
-    [Route("")]
+    [Route("v1")]
     public class VersionController : ControllerBase
     {
-        [Route("")]
+        [HttpGet]
         public object Version()
         {
             return new

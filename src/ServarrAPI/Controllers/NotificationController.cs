@@ -6,7 +6,7 @@ using ServarrAPI.Model;
 
 namespace ServarrAPI.Controllers
 {
-    [Route("[controller]")]
+    [Route("v1/[controller]")]
     public class NotificationController : Controller
     {
         private readonly Config _config;

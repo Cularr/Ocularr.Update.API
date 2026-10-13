@@ -10,7 +10,7 @@ using ServarrAPI.TaskQueue;
 
 namespace ServarrAPI.Controllers
 {
-    [Route("[controller]")]
+    [Route("v1/[controller]")]
     public class WebhookController
     {
         private readonly Config _config;
