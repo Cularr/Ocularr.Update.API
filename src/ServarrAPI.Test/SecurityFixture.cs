@@ -28,61 +28,61 @@ namespace ServarrAPI.Test
         public void an_empty_expected_key_matches_nothing(string expected) =>
             Assert.That(ApiKeyAttribute.Matches(expected, string.Empty), Is.False);
 
-        [TestCase("/v1/webhook/refresh?source=github", "POST")]
-        [TestCase("/v1/webhook/refresh?source=github&api_key=wrong", "GET")]
-        [TestCase("/v1/webhook/branch/master/refresh?api_key=wrong", "GET")]
-        public async Task webhooks_refuse_a_wrong_key(string url, string method)
+        [TestCase(null)]
+        [TestCase("wrong")]
+        [TestCase("test-key-")]
+        public async Task publishing_refuses_a_wrong_key(string apiKey)
         {
             var queue = new RecordingQueue();
             using var factory = new ServiceFactory(services: x => x.AddSingleton<IBackgroundTaskQueue>(queue));
             using var client = factory.CreateClient();
 
-            var response = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), url));
+            var response = await client.SendAsync(Request(HttpMethod.Post, "/v1/update", apiKey));
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
             Assert.That(queue.Count, Is.Zero);
         }
 
-        [TestCase("/v1/notification/1", "DELETE")]
-        [TestCase("/v1/notification/1?api_key=wrong", "DELETE")]
-        [TestCase("/v1/notification?api_key=wrong", "POST")]
-        public async Task notification_changes_refuse_a_wrong_key(string url, string method)
+        [TestCase("/v1/notification/1", "DELETE", null)]
+        [TestCase("/v1/notification/1", "DELETE", "wrong")]
+        [TestCase("/v1/notification", "POST", "wrong")]
+        public async Task notification_changes_refuse_a_wrong_key(string url, string method, string apiKey)
         {
             using var factory = new ServiceFactory();
             using var client = factory.CreateClient();
 
-            var response = await client.SendAsync(new HttpRequestMessage(new HttpMethod(method), url) { Content = new StringContent("{}", null, "application/json") });
+            var response = await client.SendAsync(Request(new HttpMethod(method), url, apiKey));
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
         }
 
-        [TestCase("")]
-        [TestCase("&source=")]
-        [TestCase("&source=gitlab")]
-        public async Task refresh_refuses_an_unknown_source(string source)
+        [Test]
+        public async Task publishing_queues_a_release_refresh()
         {
             var queue = new RecordingQueue();
             using var factory = new ServiceFactory(services: x => x.AddSingleton<IBackgroundTaskQueue>(queue));
             using var client = factory.CreateClient();
+            var deploy = "{\"branch\":\"v5-main\",\"version\":\"5.0.0.2\",\"lastCommit\":\"abc\",\"hashes\":[{\"Os\":\"linux\",\"Arch\":\"x64\",\"Type\":\"archive\",\"Hash\":\"00\"}],\"gitHubRelease\":true}";
 
-            var response = await client.PostAsync($"/v1/webhook/refresh?api_key=test-key{source}", null);
+            var response = await client.SendAsync(Request(HttpMethod.Post, "/v1/update", "test-key", deploy));
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-            Assert.That(queue.Count, Is.Zero);
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
+                Assert.That(queue.Count, Is.EqualTo(1));
+            });
         }
 
-        [TestCase("github")]
-        [TestCase("GitHub")]
-        public async Task refresh_queues_a_known_source(string source)
+        [Test]
+        public async Task the_key_is_not_read_from_the_query()
         {
             var queue = new RecordingQueue();
             using var factory = new ServiceFactory(services: x => x.AddSingleton<IBackgroundTaskQueue>(queue));
             using var client = factory.CreateClient();
 
-            var response = await client.PostAsync($"/v1/webhook/refresh?source={source}&api_key=test-key", null);
+            var response = await client.SendAsync(Request(HttpMethod.Post, "/v1/update?api_key=test-key", null));
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(queue.Count, Is.EqualTo(1));
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
         }
 
         [TestCase("")]
@@ -108,6 +108,18 @@ namespace ServarrAPI.Test
                 Assert.That(sentryEvent.Request.Url, Is.EqualTo("https://system.ocularr.ink/v1/oauth/mangabaka/renew"));
                 Assert.That(sentryEvent.Request.QueryString, Is.Null);
             });
+        }
+
+        private static HttpRequestMessage Request(HttpMethod method, string url, string apiKey, string body = "{}")
+        {
+            var request = new HttpRequestMessage(method, url) { Content = new StringContent(body, null, "application/json") };
+
+            if (apiKey != null)
+            {
+                request.Headers.Add("X-Api-Key", apiKey);
+            }
+
+            return request;
         }
     }
 }

@@ -27,7 +27,6 @@ namespace ServarrAPI.Test
         [TestCase("/time")]
         [TestCase("/update/master?version=1.0.0.0&os=linux&runtime=netcore&arch=X64")]
         [TestCase("/notification")]
-        [TestCase("/webhook/refresh?source=github&api_key=test-key")]
         public async Task paths_without_v1_are_not_served(string path)
         {
             using var factory = new ServiceFactory();

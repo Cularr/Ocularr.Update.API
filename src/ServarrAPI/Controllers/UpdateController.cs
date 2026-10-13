@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using ServarrAPI.Datastore;
 using ServarrAPI.Model;
+using ServarrAPI.Release;
+using ServarrAPI.Release.Github;
 using ServarrAPI.Stats;
+using ServarrAPI.TaskQueue;
 using ServarrAPI.Util;
 using Architecture = System.Runtime.InteropServices.Architecture;
 using OperatingSystem = ServarrAPI.Model.OperatingSystem;
@@ -20,13 +24,26 @@ namespace ServarrAPI.Controllers.Update
     {
         private readonly IUpdateFileService _updateFileService;
         private readonly IUsageStats _usageStats;
+        private readonly IBackgroundTaskQueue _queue;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly string _project;
 
-        public UpdateController(IUpdateFileService updateFileService, IUsageStats usageStats, IOptions<Config> config)
+        public UpdateController(IUpdateFileService updateFileService, IUsageStats usageStats, IBackgroundTaskQueue queue, IServiceScopeFactory serviceScopeFactory, IOptions<Config> config)
         {
             _updateFileService = updateFileService;
             _usageStats = usageStats;
+            _queue = queue;
+            _serviceScopeFactory = serviceScopeFactory;
             _project = config.Value.Project;
+        }
+
+        [HttpPost]
+        [ApiKey]
+        public IActionResult Publish()
+        {
+            ReleaseRefreshService.QueueRefresh(_queue, _serviceScopeFactory, typeof(GithubReleaseSource));
+
+            return Accepted();
         }
 
         [Route("{branch}/changes")]

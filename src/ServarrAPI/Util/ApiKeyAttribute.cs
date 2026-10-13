@@ -14,7 +14,7 @@ namespace ServarrAPI.Util
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var expected = context.HttpContext.RequestServices.GetRequiredService<IOptions<Config>>().Value.ApiKey;
-            var given = context.HttpContext.Request.Query["api_key"].ToString();
+            var given = context.HttpContext.Request.Headers["X-Api-Key"].ToString();
 
             if (!Matches(expected, given))
             {

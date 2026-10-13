@@ -75,10 +75,11 @@ namespace ServarrAPI.Test
                 ["Update:BranchRedirects:main"] = "master"
             });
             using var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Api-Key", "test-key");
 
             foreach (var (type, message, runtime) in new[] { (1, "notice", 2), (3, "error", 2), (2, "warning", 2), (3, "mono", 1) })
             {
-                var created = await client.PostAsJsonAsync("/v1/notification?api_key=test-key", new { type, message, branches = new[] { "master" }, runtimes = new[] { runtime } });
+                var created = await client.PostAsJsonAsync("/v1/notification", new { type, message, branches = new[] { "master" }, runtimes = new[] { runtime } });
                 Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             }
 
