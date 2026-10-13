@@ -16,9 +16,9 @@ namespace ServarrAPI.Release.Github
 {
     public class GithubReleaseSource : ReleaseSourceBase
     {
-        private static readonly Regex ReleaseFeaturesGroup = new(@"\*\s+[0-9a-f]{40}\s+(?:New:|\(?feat\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFeaturesGroup = new(@"^\*\s+(?:[0-9a-f]{40}\s+)?(?:New:|\(?feat(?:\([^)]*\))?\)?!?:)\s*(?<text>.*?)(?:\s+by\s+@\S+\s+in\s+https://\S+)?\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
-        private static readonly Regex ReleaseFixesGroup = new(@"\*\s+[0-9a-f]{40}\s+(?:Fix(?:ed)?:|\(?fix\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFixesGroup = new(@"^\*\s+(?:[0-9a-f]{40}\s+)?(?:Fix(?:ed)?:|\(?fix(?:\([^)]*\))?\)?!?:)\s*(?<text>.*?)(?:\s+by\s+@\S+\s+in\s+https://\S+)?\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
         private readonly Config _config;
         private readonly IUpdateService _updateService;
@@ -72,7 +72,7 @@ namespace ServarrAPI.Release.Github
                 var version = release.TagName.Substring(1);
 
                 // determine the branch
-                var branch = release.Assets.Any(a => a.Name.StartsWith($"{_config.Project}.master")) ? "master" : "develop";
+                var branch = release.Prerelease ? "develop" : "master";
 
                 if (await ProcessRelease(release, branch, version))
                 {
@@ -116,29 +116,8 @@ namespace ServarrAPI.Release.Github
             isNewRelease = true;
 
             // Parse changes
-            var releaseBody = release.Body;
-
-            var features = ReleaseFeaturesGroup.Matches(releaseBody);
-            if (features.Any())
-            {
-                updateEntity.New.Clear();
-
-                foreach (Match match in features)
-                {
-                    updateEntity.New.Add(match.Groups["text"].Value);
-                }
-            }
-
-            var fixes = ReleaseFixesGroup.Matches(releaseBody);
-            if (fixes.Any())
-            {
-                updateEntity.Fixed.Clear();
-
-                foreach (Match match in fixes)
-                {
-                    updateEntity.Fixed.Add(match.Groups["text"].Value);
-                }
-            }
+            updateEntity.New = Features(release.Body);
+            updateEntity.Fixed = Fixes(release.Body);
 
             await _updateService.Insert(updateEntity).ConfigureAwait(false);
 
@@ -147,6 +126,13 @@ namespace ServarrAPI.Release.Github
 
             return isNewRelease;
         }
+
+        public static List<string> Features(string releaseBody) => Notes(ReleaseFeaturesGroup, releaseBody);
+
+        public static List<string> Fixes(string releaseBody) => Notes(ReleaseFixesGroup, releaseBody);
+
+        private static List<string> Notes(Regex regex, string releaseBody) =>
+            regex.Matches(releaseBody ?? string.Empty).Select(x => x.Groups["text"].Value).ToList();
 
         private async Task ProcessAsset(ReleaseAsset releaseAsset, string branch, int updateId)
         {
