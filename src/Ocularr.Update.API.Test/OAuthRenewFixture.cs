@@ -1,0 +1,92 @@
+using System.Linq;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading.Tasks;
+using NUnit.Framework;
+
+namespace Ocularr.Update.API.Test
+{
+    [TestFixture]
+    public class OAuthRenewFixture
+    {
+        [Test]
+        public async Task renew_returns_the_new_tokens()
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens);
+
+            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old%20token");
+            var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var request = tokens.Requests.Single();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(response.Headers.CacheControl.NoStore, Is.True);
+                Assert.That(request.Form["grant_type"], Is.EqualTo("refresh_token"));
+                Assert.That(request.Form["refresh_token"], Is.EqualTo("old token"));
+                Assert.That(request.Authorization, Does.StartWith("Basic "));
+                Assert.That(body.GetProperty("access_token").GetString(), Is.EqualTo("access&1"));
+                Assert.That(body.GetProperty("token_type").GetString(), Is.EqualTo("Bearer"));
+                Assert.That(body.GetProperty("expires_in").GetInt32(), Is.EqualTo(3600));
+                Assert.That(body.GetProperty("refresh_token").GetString(), Is.EqualTo("refresh 1"));
+            });
+        }
+
+        [TestCase("")]
+        [TestCase("?refresh_token=")]
+        public async Task renew_requires_a_refresh_token(string query)
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens);
+
+            var response = await factory.Client().GetAsync($"/v1/oauth/mangabaka/renew{query}");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                Assert.That(tokens.Requests, Is.Empty);
+            });
+        }
+
+        [TestCase(HttpStatusCode.BadRequest, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadRequest)]
+        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_client\"}", HttpStatusCode.BadGateway)]
+        [TestCase(HttpStatusCode.InternalServerError, "{\"error\":\"server_error\"}", HttpStatusCode.BadGateway)]
+        [TestCase(HttpStatusCode.BadGateway, "<html>", HttpStatusCode.BadGateway)]
+        public async Task upstream_failures_are_reported(HttpStatusCode upstream, string body, HttpStatusCode expected)
+        {
+            var tokens = new FakeTokenEndpoint { StatusCode = upstream, Body = body };
+            using var factory = OAuthService.Create(tokens);
+
+            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+            var content = await response.Content.ReadAsStringAsync();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(expected));
+                Assert.That(content, expected == HttpStatusCode.BadRequest ? Does.Contain("invalid_grant") : Does.Not.Contain("error\":\"server_error"));
+            });
+        }
+
+        [Test]
+        public async Task oauth_requests_are_rate_limited()
+        {
+            using var factory = OAuthService.Create(new FakeTokenEndpoint());
+            var client = factory.Client();
+
+            var statuses = new HttpStatusCode[11];
+            for (var i = 0; i < statuses.Length; i++)
+            {
+                statuses[i] = (await client.GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old")).StatusCode;
+            }
+
+            Assert.Multiple(async () =>
+            {
+                Assert.That(statuses.Take(10), Is.All.EqualTo(HttpStatusCode.OK));
+                Assert.That(statuses[10], Is.EqualTo(HttpStatusCode.TooManyRequests));
+                Assert.That((await client.GetAsync("/v1/ping")).StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            });
+        }
+    }
+}

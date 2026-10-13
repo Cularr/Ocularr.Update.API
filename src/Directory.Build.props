@@ -17,8 +17,8 @@
 
   <!-- Set the Product and Version info for our own projects -->
   <PropertyGroup>
-    <Product>ServarrAPI.Update</Product>
-    <Company>servarr.com</Company>
+    <Product>Ocularr.Update.API</Product>
+    <Company>Cularr</Company>
     <Copyright>Copyright 2017-$([System.DateTime]::Now.ToString('yyyy')) radarr.video (GNU General Public v3)</Copyright>
     
     <!-- Should be replaced by CI -->
@@ -42,7 +42,6 @@
     <!-- Output to _output and _tests respectively -->
     <OutputPath>$(RootDir)_output\</OutputPath>
     <OutputPath Condition="'$(ServarrOutputType)'=='Test'">$(RootDir)_tests\</OutputPath>
-    <OutputPath Condition="'$(ServarrOutputType)'=='Update'">$(RootDir)_output\Lidarr.Update\</OutputPath>
 
     <!-- Paths relative to project file for better readability -->
 	<EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>

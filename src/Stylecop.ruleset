@@ -1,4 +1,4 @@
-<RuleSet Name="Stylecop.ruleset" Description="Rules for Radarr" ToolsVersion="15.0">
+<RuleSet Name="Stylecop.ruleset" Description="Rules for Ocularr.Update.API" ToolsVersion="15.0">
   <Rules AnalyzerId="StyleCop.CSharp.SpecialRules"
          RuleNamespace="StyleCop.CSharp.SpecialRules">
     <Rule Id="SA0001" Action="None" />

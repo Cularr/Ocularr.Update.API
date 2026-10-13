@@ -15,12 +15,12 @@
 # ServarrAPI/[Dd]ebugPublic/
 # ServarrAPI/[Rr]elease/
 # ServarrAPI/[Rr]eleases/
-ServarrAPI/x64/
-ServarrAPI/x86/
-ServarrAPI/bld/
-ServarrAPI/[Bb]in/
-ServarrAPI/[Oo]bj/
-ServarrAPI/[Ll]og/
+src/Ocularr.Update.API/x64/
+src/Ocularr.Update.API/x86/
+src/Ocularr.Update.API/bld/
+src/Ocularr.Update.API/[Bb]in/
+src/Ocularr.Update.API/[Oo]bj/
+src/Ocularr.Update.API/[Ll]og/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -259,7 +259,7 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-ServarrAPI/Properties/launchSettings\.json
+src/Ocularr.Update.API/Properties/launchSettings\.json
 
 # Docker
 .dockerignore

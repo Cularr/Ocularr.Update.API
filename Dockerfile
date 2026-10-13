@@ -30,4 +30,4 @@ COPY --from=sdk /app/_output/net10.0/publish/. ./
 EXPOSE 5000/tcp
 
 # Docker Entry
-ENTRYPOINT ["dotnet", "ServarrAPI.dll"]
+ENTRYPOINT ["dotnet", "Ocularr.Update.API.dll"]

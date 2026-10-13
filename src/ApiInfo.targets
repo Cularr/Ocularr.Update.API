@@ -9,7 +9,7 @@
 		</ItemGroup>
 		<WriteLinesToFile
 			File="$(ApiInfoFile)"
-			Lines="namespace ServarrAPI
+			Lines="namespace Ocularr.Update.API
 {
     public static class ApiInfo
     {
