@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using NUnit.Framework;
-using ServarrAPI.Model;
 using ServarrAPI.Util;
 using OperatingSystem = ServarrAPI.Model.OperatingSystem;
 
@@ -24,21 +23,18 @@ namespace ServarrAPI.Test
         public void ocularr_runtime_assets_are_parsed(string file, OperatingSystem os, Architecture arch, bool installer)
         {
             Assert.That(
-                (Parser.ParseOS(file), Parser.ParseArchitecture(file), Parser.ParseRuntime(file), Parser.ParseInstaller(file)),
-                Is.EqualTo(((OperatingSystem?)os, arch, Runtime.NetCore, installer)));
-        }
-
-        [TestCase("Lidarr.master.1.0.0.1.linux-core-arm64.tar.gz", OperatingSystem.Linux, Architecture.Arm64, Runtime.NetCore)]
-        [TestCase("Lidarr.master.1.0.0.1.windows-core-x86.zip", OperatingSystem.Windows, Architecture.X86, Runtime.NetCore)]
-        [TestCase("Lidarr.master.1.0.0.1.linux.tar.gz", OperatingSystem.Linux, Architecture.X64, Runtime.DotNet)]
-        public void servarr_core_assets_are_still_parsed(string file, OperatingSystem os, Architecture arch, Runtime runtime)
-        {
-            Assert.That((Parser.ParseOS(file), Parser.ParseArchitecture(file), Parser.ParseRuntime(file)), Is.EqualTo(((OperatingSystem?)os, arch, runtime)));
+                (Parser.ParseOS(file), Parser.ParseArchitecture(file), Parser.ParseInstaller(file)),
+                Is.EqualTo(((OperatingSystem?)os, arch, installer)));
         }
 
         [TestCase("Ocularr.main.5.0.3.40.linux-x64.tar.gz.sha256")]
         [TestCase("Ocularr.main.5.0.3.40.solaris-x64.tar.gz")]
         [TestCase("source.zip")]
+        [TestCase("Lidarr.master.1.0.0.1.linux-core-arm64.tar.gz")]
+        [TestCase("Lidarr.master.1.0.0.1.windows-core-x86.zip")]
+        [TestCase("Lidarr.master.1.0.0.1.linux.tar.gz")]
+        [TestCase("Lidarr.master.1.0.0.1.windows.zip")]
+        [TestCase("Lidarr.master.1.0.0.1.osx-app.zip")]
         public void other_assets_are_ignored(string file)
         {
             Assert.That(Parser.ParseOS(file), Is.Null);

@@ -47,7 +47,6 @@ namespace ServarrAPI.Datastore
             SqlMapper.RemoveTypeMap(typeof(byte[]));
             SqlMapper.AddTypeHandler(new GzipConverter());
             SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<string>>());
-            SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<Runtime>>());
             SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<Architecture>>());
             SqlMapper.AddTypeHandler(new EmbeddedDocumentConverter<List<OperatingSystem>>());
         }

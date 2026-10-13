@@ -9,7 +9,7 @@ namespace ServarrAPI.Model
 {
     public interface INotificationRepository : IBasicRepository<Notification>
     {
-        Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch);
+        Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Architecture arch);
     }
 
     public class NotificationRepository : BasicRepository<Notification>, INotificationRepository
@@ -19,15 +19,14 @@ namespace ServarrAPI.Model
         {
         }
 
-        public async Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
+        public async Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Architecture arch)
         {
-            return Matching(await All(), version, branch, os, runtime, arch);
+            return Matching(await All(), version, branch, os, arch);
         }
 
-        public static List<Notification> Matching(IEnumerable<Notification> all, string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
+        public static List<Notification> Matching(IEnumerable<Notification> all, string version, string branch, OperatingSystem os, Architecture arch)
         {
             var result2 = all.Where(f => (f.OperatingSystems.Contains(os) || f.OperatingSystems.Count == 0) &&
-                                                              (f.Runtimes.Contains(runtime) || f.Runtimes.Count == 0) &&
                                                               (f.Architectures.Contains(arch) || f.Architectures.Count == 0) &&
                                                               (f.Branches.Contains(branch, StringComparer.OrdinalIgnoreCase) || f.Branches.Count == 0) &&
                                                               (VersionValidation(version, f.Versions) || f.Versions.Count == 0));

@@ -10,7 +10,7 @@ namespace ServarrAPI.Model
     public interface INotificationService
     {
         Task<IEnumerable<Notification>> All();
-        Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch);
+        Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Architecture arch);
         Task<Notification> Insert(Notification entity);
         void Delete(int id);
     }
@@ -35,9 +35,9 @@ namespace ServarrAPI.Model
             return _repo.All();
         }
 
-        public Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
+        public Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Architecture arch)
         {
-            return _repo.Find(version, _config.MapBranch(branch), os, runtime, arch);
+            return _repo.Find(version, _config.MapBranch(branch), os, arch);
         }
 
         public Task<Notification> Insert(Notification entity)

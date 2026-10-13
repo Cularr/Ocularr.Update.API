@@ -59,7 +59,6 @@ namespace ServarrAPI.Test
                 ["os"] = "Linux",
                 ["osName"] = "ubuntu",
                 ["osVersion"] = "24.04",
-                ["runtime"] = "NetCore",
                 ["runtimeVersion"] = "10.0.0",
                 ["arch"] = "Arm64",
                 ["dbType"] = "PostgreSQL"

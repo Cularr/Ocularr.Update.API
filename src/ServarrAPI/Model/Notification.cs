@@ -8,7 +8,6 @@ namespace ServarrAPI.Model
         public Notification()
         {
             OperatingSystems = new List<OperatingSystem>();
-            Runtimes = new List<Runtime>();
             Architectures = new List<System.Runtime.InteropServices.Architecture>();
             Versions = new List<string>();
             Branches = new List<string>();
@@ -18,7 +17,6 @@ namespace ServarrAPI.Model
         public string Message { get; set; }
         public string WikiUrl { get; set; }
         public List<OperatingSystem> OperatingSystems { get; set; }
-        public List<Runtime> Runtimes { get; set; }
         public List<System.Runtime.InteropServices.Architecture> Architectures { get; set; }
         public List<string> Versions { get; set; }
         public List<string> Branches { get; set; }

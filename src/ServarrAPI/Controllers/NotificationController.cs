@@ -21,11 +21,9 @@ namespace ServarrAPI.Controllers
         public async Task<object> GetNotifications([FromQuery(Name = "branch")] string updateBranch,
                                                    [FromQuery(Name = "version")] string urlVersion,
                                                    [FromQuery(Name = "os")] OperatingSystem operatingSystem,
-                                                   [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
-                                                   [FromQuery(Name = "runtime")] Runtime runtime = Runtime.NetCore,
                                                    [FromQuery(Name = "arch")] Architecture arch = Architecture.X64)
         {
-            return await _notificationService.Find(urlVersion, updateBranch, operatingSystem, runtime, arch);
+            return await _notificationService.Find(urlVersion, updateBranch, operatingSystem, arch);
         }
 
         [HttpPost]

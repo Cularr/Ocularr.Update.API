@@ -166,7 +166,6 @@ namespace ServarrAPI.Release.Github
                 return;
             }
 
-            var runtime = Parser.ParseRuntime(releaseAsset.Name);
             var arch = Parser.ParseArchitecture(releaseAsset.Name);
             var installer = Parser.ParseInstaller(releaseAsset.Name);
 
@@ -197,7 +196,6 @@ namespace ServarrAPI.Release.Github
                     UpdateId = updateId,
                     OperatingSystem = operatingSystem.Value,
                     Architecture = arch,
-                    Runtime = runtime,
                     Filename = releaseAsset.Name,
                     Url = releaseAsset.BrowserDownloadUrl,
                     Hash = releaseHash,

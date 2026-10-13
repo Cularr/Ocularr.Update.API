@@ -47,20 +47,19 @@ namespace ServarrAPI.Test
                 new Notification { Id = 4, Type = NotificationType.Error }
             };
 
-            Assert.That(NotificationRepository.Matching(notifications, "5.0.0.1", "master", OperatingSystem.Linux, Runtime.NetCore, Architecture.X64).Select(x => x.Id), Is.EqualTo(new[] { 4, 2, 3, 1 }));
+            Assert.That(NotificationRepository.Matching(notifications, "5.0.0.1", "master", OperatingSystem.Linux, Architecture.X64).Select(x => x.Id), Is.EqualTo(new[] { 4, 2, 3, 1 }));
         }
 
         [Test]
         public void filters_narrow_by_platform()
         {
-            var notification = new Notification { OperatingSystems = { OperatingSystem.Windows }, Runtimes = { Runtime.NetCore }, Architectures = { Architecture.Arm64 } };
+            var notification = new Notification { OperatingSystems = { OperatingSystem.Windows }, Architectures = { Architecture.Arm64 } };
 
             Assert.Multiple(() =>
             {
-                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Windows, Runtime.NetCore, Architecture.Arm64), Has.Count.EqualTo(1));
-                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Linux, Runtime.NetCore, Architecture.Arm64), Is.Empty);
-                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Windows, Runtime.DotNet, Architecture.Arm64), Is.Empty);
-                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Windows, Runtime.NetCore, Architecture.X64), Is.Empty);
+                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Windows, Architecture.Arm64), Has.Count.EqualTo(1));
+                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Linux, Architecture.Arm64), Is.Empty);
+                Assert.That(NotificationRepository.Matching(new[] { notification }, "5.0.0.1", "master", OperatingSystem.Windows, Architecture.X64), Is.Empty);
             });
         }
 
@@ -77,9 +76,9 @@ namespace ServarrAPI.Test
             using var client = factory.CreateClient();
             client.DefaultRequestHeaders.Add("X-Api-Key", "test-key");
 
-            foreach (var (type, message, runtime) in new[] { (1, "notice", 2), (3, "error", 2), (2, "warning", 2), (3, "mono", 1) })
+            foreach (var (type, message, os) in new[] { (1, "notice", 1), (3, "error", 1), (2, "warning", 1), (3, "windows", 0) })
             {
-                var created = await client.PostAsJsonAsync("/v1/notification", new { type, message, branches = new[] { "master" }, runtimes = new[] { runtime } });
+                var created = await client.PostAsJsonAsync("/v1/notification", new { type, message, branches = new[] { "master" }, operatingSystems = new[] { os } });
                 Assert.That(created.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             }
 
@@ -89,6 +88,6 @@ namespace ServarrAPI.Test
         }
 
         private static List<Notification> Match(Notification notification, string version, string branch = "master") =>
-            NotificationRepository.Matching(new[] { notification }, version, branch, OperatingSystem.Linux, Runtime.NetCore, Architecture.X64);
+            NotificationRepository.Matching(new[] { notification }, version, branch, OperatingSystem.Linux, Architecture.X64);
     }
 }

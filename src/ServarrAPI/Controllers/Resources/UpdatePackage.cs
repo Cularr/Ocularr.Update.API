@@ -21,8 +21,6 @@ namespace ServarrAPI.Controllers.Update
 
         public string Branch { get; set; }
 
-        public string Runtime { get; set; }
-
         /// <summary>
         ///     The Status of the build, in theory should always be "success"
         /// </summary>

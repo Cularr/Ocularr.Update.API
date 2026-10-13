@@ -94,6 +94,21 @@ namespace ServarrAPI.Test
             Assert.That(await Latest("main"), Is.EqualTo("5.0.0.2"));
         }
 
+        [TestCase("osx", "Arm64", "Ocularr.main.5.0.0.2.osx-arm64.tar.gz")]
+        [TestCase("osx", "X64", "Ocularr.main.5.0.0.2.osx-x64.tar.gz")]
+        [TestCase("bsd", "X64", "Ocularr.main.5.0.0.2.freebsd-x64.tar.gz")]
+        [TestCase("bsd", "Arm64", null)]
+        [TestCase("windows", "X64", "Ocularr.main.5.0.0.2.win-x64.zip")]
+        public async Task every_platform_gets_the_file_for_its_architecture(string os, string arch, string expected)
+        {
+            _github.AddRelease("5.0.0.2", false, "Ocularr.main.5.0.0.2.osx-x64.tar.gz", "Ocularr.main.5.0.0.2.osx-arm64.tar.gz", "Ocularr.main.5.0.0.2.freebsd-x64.tar.gz", "Ocularr.main.5.0.0.2.win-x64.zip", "Ocularr.main.5.0.0.2.win-x64-installer.exe");
+
+            await Refresh();
+            var package = await Package("master", os, arch: arch);
+
+            Assert.That(package.ValueKind == JsonValueKind.Undefined ? null : package.GetProperty("filename").GetString(), Is.EqualTo(expected));
+        }
+
         [Test]
         public async Task a_partial_import_is_completed_on_the_next_refresh()
         {
@@ -179,10 +194,10 @@ namespace ServarrAPI.Test
             return package.ValueKind == JsonValueKind.Undefined ? null : package.GetProperty("version").GetString();
         }
 
-        private async Task<JsonElement> Package(string branch, string os, HttpClient client = null)
+        private async Task<JsonElement> Package(string branch, string os, HttpClient client = null, string arch = "X64")
         {
             client ??= _factory.CreateClient();
-            var response = await client.GetFromJsonAsync<JsonElement>($"/v1/update/{branch}?version=5.0.0.1&os={os}&runtime=netcore&arch=X64");
+            var response = await client.GetFromJsonAsync<JsonElement>($"/v1/update/{branch}?version=5.0.0.1&os={os}&runtime=netcore&arch={arch}");
             return response.TryGetProperty("updatePackage", out var package) ? package : default;
         }
     }

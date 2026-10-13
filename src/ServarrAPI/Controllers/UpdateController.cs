@@ -50,13 +50,11 @@ namespace ServarrAPI.Controllers.Update
         public async Task<object> GetChanges([FromRoute(Name = "branch")] string updateBranch,
                                              [FromQuery(Name = "version")] string urlVersion,
                                              [FromQuery(Name = "os")] OperatingSystem operatingSystem,
-                                             [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
-                                             [FromQuery(Name = "runtime")] Runtime runtime = Runtime.DotNet,
                                              [FromQuery(Name = "arch")] Architecture arch = Architecture.X64)
         {
             Response.Headers[HeaderNames.CacheControl] = GetCacheControlHeader(DateTime.UtcNow.AddMinutes(5));
 
-            var updateFiles = await _updateFileService.Find(updateBranch, operatingSystem, runtime, arch, false, 5, urlVersion, urlRuntimeVersion);
+            var updateFiles = await _updateFileService.Find(updateBranch, operatingSystem, arch, false, 5);
 
             var response = new List<UpdatePackage>();
 
@@ -95,10 +93,8 @@ namespace ServarrAPI.Controllers.Update
         public async Task<object> GetUpdates([FromRoute(Name = "branch")] string updateBranch,
                                              [FromQuery(Name = "version")] string urlVersion,
                                              [FromQuery(Name = "os")] OperatingSystem operatingSystem,
-                                             [FromQuery(Name = "runtime")] Runtime runtime,
                                              [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
                                              [FromQuery(Name = "arch")] Architecture arch,
-                                             [FromQuery(Name = "includeMajorVersion")] bool includeMajorVersion = false,
                                              [FromQuery(Name = "dbType")] string dbType = "SQLite",
                                              [FromQuery(Name = "active")] bool? activeInstall = null)
         {
@@ -128,7 +124,6 @@ namespace ServarrAPI.Controllers.Update
                         { "os", operatingSystem.ToString() },
                         { "osName", userAgentInfo.Name ?? "Unknown" },
                         { "osVersion", userAgentInfo.OsVersion ?? "Unknown" },
-                        { "runtime", runtime.ToString() },
                         { "runtimeVersion", urlRuntimeVersion },
                         { "arch", arch.ToString() },
                         { "activeinstall", activeInstall.Value.ToString() },
@@ -136,7 +131,7 @@ namespace ServarrAPI.Controllers.Update
                     });
             }
 
-            var files = await _updateFileService.Find(updateBranch, operatingSystem, runtime, arch, false, 1, urlVersion, urlRuntimeVersion, excludeMajorVersions: !includeMajorVersion);
+            var files = await _updateFileService.Find(updateBranch, operatingSystem, arch, false, 1);
 
             var updateFile = files.FirstOrDefault();
 
@@ -184,8 +179,7 @@ namespace ServarrAPI.Controllers.Update
                     Url = updateFile.Url,
                     Changes = updateChanges,
                     Hash = updateFile.Hash,
-                    Branch = update.Branch.ToString().ToLower(),
-                    Runtime = updateFile.Runtime.ToString().ToLower()
+                    Branch = update.Branch.ToString().ToLower()
                 }
             };
         }
@@ -195,7 +189,6 @@ namespace ServarrAPI.Controllers.Update
         public async Task<object> GetUpdateFile([FromRoute(Name = "branch")] string updateBranch,
                                                 [FromQuery(Name = "version")] string urlVersion,
                                                 [FromQuery(Name = "os")] OperatingSystem operatingSystem,
-                                                [FromQuery(Name = "runtime")] Runtime runtime,
                                                 [FromQuery(Name = "arch")] Architecture arch,
                                                 [FromQuery(Name = "installer")] bool installer = false)
         {
@@ -213,11 +206,11 @@ namespace ServarrAPI.Controllers.Update
                     };
                 }
 
-                updateFile = await _updateFileService.Find(urlVersion, updateBranch, operatingSystem, runtime, arch, installer);
+                updateFile = await _updateFileService.Find(urlVersion, updateBranch, operatingSystem, arch, installer);
             }
             else
             {
-                var updateFiles = await _updateFileService.Find(updateBranch, operatingSystem, runtime, arch, installer, 1);
+                var updateFiles = await _updateFileService.Find(updateBranch, operatingSystem, arch, installer, 1);
                 updateFile = updateFiles.FirstOrDefault();
             }
 

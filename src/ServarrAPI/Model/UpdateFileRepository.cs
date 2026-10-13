@@ -10,8 +10,8 @@ namespace ServarrAPI.Model
 {
     public interface IUpdateFileRepository : IBasicRepository<UpdateFileEntity>
     {
-        Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer);
-        Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, Version maxVersion);
+        Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Architecture arch, bool installer);
+        Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Architecture arch, bool installer, int count);
         Task<List<string>> FileNames(int updateId);
     }
 
@@ -22,11 +22,10 @@ namespace ServarrAPI.Model
         {
         }
 
-        public async Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer)
+        public async Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Architecture arch, bool installer)
         {
             var result = await Query(Builder()
                                      .Where<UpdateFileEntity>(f => f.OperatingSystem == os &&
-                                                              f.Runtime == runtime &&
                                                               f.Architecture == arch &&
                                                               f.Installer == installer)
                                      .Where<UpdateEntity>(u => u.Branch == branch &&
@@ -34,26 +33,9 @@ namespace ServarrAPI.Model
             return result.FirstOrDefault();
         }
 
-        public async Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, Version maxVersion)
+        public async Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Architecture arch, bool installer, int count)
         {
-            var builder = Builder().Where<UpdateFileEntity>(f => f.OperatingSystem == os && f.Installer == installer);
-
-            if (os == OperatingSystem.Linux ||
-                os == OperatingSystem.LinuxMusl)
-            {
-                builder.Where<UpdateFileEntity>(f => f.Runtime == runtime && f.Architecture == arch);
-            }
-            else if (os == OperatingSystem.Windows ||
-                     os == OperatingSystem.Osx)
-            {
-                builder.Where<UpdateFileEntity>(f => f.Architecture == arch);
-            }
-
-            if (maxVersion != null)
-            {
-                var maxVersionInt = maxVersion.ToIntVersion();
-                builder.Where<UpdateEntity>(u => u.IntVersion <= maxVersionInt);
-            }
+            var builder = Builder().Where<UpdateFileEntity>(f => f.OperatingSystem == os && f.Architecture == arch && f.Installer == installer);
 
             var result = await Query(builder.Where<UpdateEntity>(u => u.Branch == branch).OrderBy($"update.intversion DESC LIMIT {count}"))
                 .ConfigureAwait(false);
