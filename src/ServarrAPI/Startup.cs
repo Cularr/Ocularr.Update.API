@@ -21,16 +21,10 @@ namespace ServarrAPI
 {
     public class Startup
     {
-        public Startup(IHostEnvironment env)
+        public Startup(IConfiguration configuration)
         {
             // Loading .NetCore style of config variables from json and environment
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-
-            Config = builder.Build();
+            Config = configuration;
             ConfigServarr = Config.GetSection("Update").Get<Config>();
 
             if (ConfigServarr == null)
