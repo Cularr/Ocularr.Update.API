@@ -6,6 +6,7 @@ using FluentMigrator.Runner.Initialization;
 using FluentMigrator.Runner.Processors;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace ServarrAPI.Datastore.Migration.Framework
 {
@@ -27,7 +28,7 @@ namespace ServarrAPI.Datastore.Migration.Framework
         {
             var sw = Stopwatch.StartNew();
 
-            _logger.LogInformation("*** Migrating {0} ***", connectionString);
+            _logger.LogInformation("*** Migrating {0} ***", new NpgsqlConnectionStringBuilder(connectionString).Database);
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging(lb => lb.AddProvider(new MigrationLoggerProvider(_logger)))

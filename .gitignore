@@ -262,3 +262,7 @@ __pycache__/
 *.pyc
 src/ServarrAPI/Properties/launchSettings\.json
 _tests/
+
+# Local secrets and data
+.env
+data/

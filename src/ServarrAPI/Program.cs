@@ -4,6 +4,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Sentry;
 using Serilog;
 
 namespace ServarrAPI
@@ -34,8 +35,19 @@ namespace ServarrAPI
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder.UseStartup<Startup>();
-                webBuilder.UseSentry();
+                webBuilder.UseSentry(options => options.SetBeforeSend(WithoutQuery));
             })
             .UseSerilog();
+
+        public static SentryEvent WithoutQuery(SentryEvent sentryEvent, SentryHint hint)
+        {
+            if (sentryEvent.Request != null)
+            {
+                sentryEvent.Request.QueryString = null;
+                sentryEvent.Request.Url = sentryEvent.Request.Url?.Split('?')[0];
+            }
+
+            return sentryEvent;
+        }
     }
 }

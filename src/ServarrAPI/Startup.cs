@@ -34,10 +34,8 @@ namespace ServarrAPI
 
             Log.Debug($@"Config Variables
             ----------------
-            Database       : {Config.GetConnectionString("Database")}
             Project        : {ConfigServarr.Project}
-            DataDirectory  : {ConfigServarr.DataDirectory}
-            APIKey         : {ConfigServarr.ApiKey}");
+            DataDirectory  : {ConfigServarr.DataDirectory}");
 
             SetupDataDirectory();
         }
@@ -49,7 +47,10 @@ namespace ServarrAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<Config>(Config.GetSection("Update"));
+            services.AddOptions<Config>()
+                .Bind(Config.GetSection("Update"))
+                .Validate(x => !string.IsNullOrWhiteSpace(x.ApiKey), "Update:ApiKey is required.")
+                .ValidateOnStart();
             services.Configure<StatsOptions>(Config.GetSection("Stats"));
 
             services.AddSingleton<IMigrationController, MigrationController>();

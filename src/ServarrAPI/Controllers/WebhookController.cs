@@ -1,45 +1,38 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using ServarrAPI.Cloudflare;
 using ServarrAPI.Release;
 using ServarrAPI.Release.Azure;
 using ServarrAPI.Release.Github;
 using ServarrAPI.TaskQueue;
+using ServarrAPI.Util;
 
 namespace ServarrAPI.Controllers
 {
     [Route("v1/[controller]")]
-    public class WebhookController
+    [ApiKey]
+    public class WebhookController : ControllerBase
     {
-        private readonly Config _config;
         private readonly IBackgroundTaskQueue _queue;
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ICloudflareProxy _cloudflare;
 
         public WebhookController(IBackgroundTaskQueue queue,
                                  IServiceScopeFactory serviceScopeFactory,
-                                 ICloudflareProxy cloudflare,
-                                 IOptions<Config> optionsConfig)
+                                 ICloudflareProxy cloudflare)
         {
             _queue = queue;
             _serviceScopeFactory = serviceScopeFactory;
             _cloudflare = cloudflare;
-            _config = optionsConfig.Value;
         }
 
         [Route("refresh")]
         [HttpGet]
         [HttpPost]
-        public string Refresh([FromQuery] string source, [FromQuery(Name = "api_key")] string apiKey)
+        public IActionResult Refresh([FromQuery] string source)
         {
-            if (!_config.ApiKey.Equals(apiKey))
-            {
-                return "No, thank you.";
-            }
-
-            var type = source.ToLower() switch
+            var type = source?.ToLowerInvariant() switch
             {
                 "azure" => typeof(AzureReleaseSource),
                 "github" => typeof(GithubReleaseSource),
@@ -48,7 +41,7 @@ namespace ServarrAPI.Controllers
 
             if (type == null)
             {
-                return $"Unknown source {source}";
+                return BadRequest("Unknown source.");
             }
 
             _queue.QueueBackgroundWorkItem(async token =>
@@ -60,26 +53,21 @@ namespace ServarrAPI.Controllers
                 await releaseService.UpdateReleasesAsync(type);
             });
 
-            return "Thank you.";
+            return Ok("Thank you.");
         }
 
         [Route("branch/{branch}/refresh")]
         [HttpGet]
-        public async Task<string> InvalidateCache([FromQuery(Name = "api_key")] string apiKey, [FromRoute(Name = "branch")] string branch)
+        public async Task<IActionResult> InvalidateCache([FromRoute(Name = "branch")] string branch)
         {
-            if (!_config.ApiKey.Equals(apiKey))
-            {
-                return "No, thank you.";
-            }
-
             if (string.IsNullOrWhiteSpace(branch))
             {
-                return "Unknown branch.";
+                return BadRequest("Unknown branch.");
             }
 
             await _cloudflare.InvalidateBranches(new[] { branch }).ConfigureAwait(false);
 
-            return "Thank you.";
+            return Ok("Thank you.");
         }
     }
 }

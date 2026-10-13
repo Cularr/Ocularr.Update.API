@@ -1,22 +1,19 @@
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using ServarrAPI.Model;
+using ServarrAPI.Util;
 
 namespace ServarrAPI.Controllers
 {
     [Route("v1/[controller]")]
     public class NotificationController : Controller
     {
-        private readonly Config _config;
         private readonly INotificationService _notificationService;
 
-        public NotificationController(INotificationService notificationService,
-                                      IOptions<Config> optionsConfig)
+        public NotificationController(INotificationService notificationService)
         {
             _notificationService = notificationService;
-            _config = optionsConfig.Value;
         }
 
         [HttpGet]
@@ -31,13 +28,9 @@ namespace ServarrAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<object> AddNotification([FromBody] Notification notification, [FromQuery(Name = "api_key")] string apiKey)
+        [ApiKey]
+        public async Task<object> AddNotification([FromBody] Notification notification)
         {
-            if (!_config.ApiKey.Equals(apiKey))
-            {
-                return new UnauthorizedResult();
-            }
-
             try
             {
                 return await _notificationService.Insert(notification);
@@ -50,13 +43,9 @@ namespace ServarrAPI.Controllers
 
         [Route("{id}")]
         [HttpDelete]
-        public object DeleteNotification([FromRoute(Name = "id")] int id, [FromQuery(Name = "api_key")] string apiKey)
+        [ApiKey]
+        public object DeleteNotification([FromRoute(Name = "id")] int id)
         {
-            if (!_config.ApiKey.Equals(apiKey))
-            {
-                return new UnauthorizedResult();
-            }
-
             _notificationService.Delete(id);
 
             return new OkResult();
