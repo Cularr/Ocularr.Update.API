@@ -1,17 +1,20 @@
 using System;
 using System.IO;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Octokit;
 using Serilog;
 using ServarrAPI.Cloudflare;
 using ServarrAPI.Datastore;
 using ServarrAPI.Datastore.Migration.Framework;
 using ServarrAPI.Model;
+using ServarrAPI.OAuth;
 using ServarrAPI.Release;
 using ServarrAPI.Release.Azure;
 using ServarrAPI.Release.Github;
@@ -75,6 +78,21 @@ namespace ServarrAPI
             services.AddHostedService<QueuedHostedService>();
             services.AddHostedService<ReleaseRefreshService>();
 
+            services.AddOptions<OAuthOptions>().Bind(Config.GetSection("OAuth")).ValidateOnStart();
+            services.AddSingleton<IValidateOptions<OAuthOptions>, OAuthOptionsValidator>();
+            services.AddSingleton<OAuthStateProtector>();
+            services.AddHttpClient(nameof(OAuthController), client => client.Timeout = TimeSpan.FromSeconds(30));
+            services.AddDataProtection()
+                .SetApplicationName("ServarrAPI")
+                .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(ConfigServarr.DataDirectory, "keys")));
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.AddPolicy(OAuthController.RateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? string.Empty,
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+            });
+
             services
                 .AddControllers()
                 .AddJsonOptions(options => options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
@@ -93,6 +111,8 @@ namespace ServarrAPI
             app.UseSerilogRequestLogging();
 
             app.UseRouting();
+
+            app.UseRateLimiter();
 
             app.UseAuthorization();
 

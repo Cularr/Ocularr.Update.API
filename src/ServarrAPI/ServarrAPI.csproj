@@ -18,6 +18,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="Duende.IdentityModel" Version="8.1.0" />
     <PackageReference Include="InfluxDB.Client" Version="5.1.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Sentry.AspNetCore" Version="5.16.2" />
