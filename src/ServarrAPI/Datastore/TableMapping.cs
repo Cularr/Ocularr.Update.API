@@ -18,6 +18,11 @@ namespace ServarrAPI.Datastore
 
         public static void Map()
         {
+            if (Mapper.TableMap.ContainsKey(typeof(UpdateEntity)))
+            {
+                return;
+            }
+
             RegisterMappers();
 
             Mapper.Entity<UpdateEntity>("update").RegisterModel()

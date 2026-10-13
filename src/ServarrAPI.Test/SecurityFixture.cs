@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -109,19 +108,6 @@ namespace ServarrAPI.Test
                 Assert.That(sentryEvent.Request.Url, Is.EqualTo("https://system.ocularr.ink/v1/oauth/mangabaka/renew"));
                 Assert.That(sentryEvent.Request.QueryString, Is.Null);
             });
-        }
-
-        private sealed class RecordingQueue : IBackgroundTaskQueue
-        {
-            public int Count { get; private set; }
-
-            public void QueueBackgroundWorkItem(Func<CancellationToken, Task> workItem) => Count++;
-
-            public async Task<Func<CancellationToken, Task>> DequeueAsync(CancellationToken cancellationToken)
-            {
-                await Task.Delay(Timeout.Infinite, cancellationToken);
-                return null;
-            }
         }
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ServarrAPI.Model;
 
@@ -20,6 +21,8 @@ namespace ServarrAPI
         public string GithubToken { get; set; }
         public string Project { get; set; }
         public bool LogSql { get; set; }
+        public string GithubUrl { get; set; }
+        public TimeSpan RefreshInterval { get; set; } = TimeSpan.FromHours(3);
         public List<VersionGate> VersionGates { get; set; }
         public List<MonoGate> MonoGates { get; set; }
         public List<Trigger> Triggers { get; set; }

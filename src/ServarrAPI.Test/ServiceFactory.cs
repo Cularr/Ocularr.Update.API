@@ -21,7 +21,8 @@ namespace ServarrAPI.Test
                 ["Update:DataDirectory"] = DataDirectory,
                 ["Update:ApiKey"] = "test-key",
                 ["Update:Project"] = "Ocularr",
-                ["Sentry:Dsn"] = string.Empty
+                ["Sentry:Dsn"] = string.Empty,
+                ["Update:RefreshInterval"] = "00:00:00"
             };
 
             foreach (var (key, value) in settings ?? new Dictionary<string, string>())

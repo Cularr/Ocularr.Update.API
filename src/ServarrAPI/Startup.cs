@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using Octokit;
 using Serilog;
 using ServarrAPI.Cloudflare;
@@ -62,7 +63,8 @@ namespace ServarrAPI
             services.AddSingleton<INotificationRepository, NotificationRepository>();
             services.AddSingleton<INotificationService, NotificationService>();
             services.AddSingleton<ICloudflareProxy, CloudflareProxy>();
-            services.AddSingleton(new GitHubClient(new ProductHeaderValue("ServarrAPI")));
+            services.AddSingleton(x => GithubReleaseSource.CreateClient(x.GetRequiredService<IOptions<Config>>().Value));
+            services.AddHttpClient(nameof(GithubReleaseSource), (x, client) => GithubReleaseSource.ConfigureDownloads(client, x.GetRequiredService<IOptions<Config>>().Value));
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddSingleton<IUsageStats, UsageStats>();
 
@@ -71,6 +73,7 @@ namespace ServarrAPI
             services.AddTransient<AzureReleaseSource>();
 
             services.AddHostedService<QueuedHostedService>();
+            services.AddHostedService<ReleaseRefreshService>();
 
             services
                 .AddControllers()

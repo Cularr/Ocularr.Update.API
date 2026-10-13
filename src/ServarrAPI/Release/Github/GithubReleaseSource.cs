@@ -28,20 +28,39 @@ namespace ServarrAPI.Release.Github
 
         public GithubReleaseSource(IUpdateService updateService,
                                    IUpdateFileService updateFileService,
+                                   GitHubClient gitHubClient,
+                                   IHttpClientFactory httpClientFactory,
                                    IOptions<Config> config)
         {
             _updateService = updateService;
             _updateFileService = updateFileService;
             _config = config.Value;
+            _gitHubClient = gitHubClient;
+            _httpClient = httpClientFactory.CreateClient(nameof(GithubReleaseSource));
+        }
 
+        public static GitHubClient CreateClient(Config config)
+        {
             var productHeader = new ProductHeaderValue("ServarrAPI");
-            _gitHubClient = new GitHubClient(productHeader);
-            _httpClient = new HttpClient();
-            if (!string.IsNullOrWhiteSpace(_config.GithubToken))
+            var client = string.IsNullOrWhiteSpace(config.GithubUrl)
+                ? new GitHubClient(productHeader)
+                : new GitHubClient(productHeader, new Uri(config.GithubUrl));
+
+            if (!string.IsNullOrWhiteSpace(config.GithubToken))
             {
-                _gitHubClient.Credentials = new Credentials(_config.GithubToken);
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"token {_config.GithubToken}");
-                _httpClient.DefaultRequestHeaders.Add("User-Agent", "ServarrAPI");
+                client.Credentials = new Credentials(config.GithubToken);
+            }
+
+            return client;
+        }
+
+        public static void ConfigureDownloads(HttpClient client, Config config)
+        {
+            client.DefaultRequestHeaders.Add("User-Agent", "ServarrAPI");
+
+            if (!string.IsNullOrWhiteSpace(config.GithubToken))
+            {
+                client.DefaultRequestHeaders.Add("Authorization", $"token {config.GithubToken}");
             }
         }
 
@@ -98,7 +117,12 @@ namespace ServarrAPI.Release.Github
 
             if (updateEntity != null)
             {
-                return isNewRelease;
+                var stored = await _updateFileService.FileNames(updateEntity.Id).ConfigureAwait(false);
+                var missing = release.Assets.Where(x => !stored.Contains(x.Name) && Parser.ParseOS(x.Name).HasValue).ToList();
+
+                await Task.WhenAll(missing.Select(x => ProcessAsset(x, branch, updateEntity.Id)));
+
+                return missing.Count > 0;
             }
 
             var parsedVersion = Version.Parse(version);

@@ -44,14 +44,7 @@ namespace ServarrAPI.Controllers
                 return BadRequest("Unknown source.");
             }
 
-            _queue.QueueBackgroundWorkItem(async token =>
-            {
-                using var scope = _serviceScopeFactory.CreateScope();
-                var scopedServices = scope.ServiceProvider;
-                var releaseService = scopedServices.GetRequiredService<ReleaseService>();
-
-                await releaseService.UpdateReleasesAsync(type);
-            });
+            ReleaseRefreshService.QueueRefresh(_queue, _serviceScopeFactory, type);
 
             return Ok("Thank you.");
         }

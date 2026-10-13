@@ -13,6 +13,7 @@ namespace ServarrAPI.Model
         Task<UpdateFileEntity> Insert(UpdateFileEntity model);
         Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer);
         Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, string installedVersion = null, string runtimeVersion = null, bool excludeMajorVersions = false);
+        Task<List<string>> FileNames(int updateId);
     }
 
     public class UpdateFileService : IUpdateFileService
@@ -33,6 +34,11 @@ namespace ServarrAPI.Model
         public Task<UpdateFileEntity> Insert(UpdateFileEntity model)
         {
             return _repo.Insert(model);
+        }
+
+        public Task<List<string>> FileNames(int updateId)
+        {
+            return _repo.FileNames(updateId);
         }
 
         public Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer)

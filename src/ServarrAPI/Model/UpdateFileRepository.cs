@@ -12,6 +12,7 @@ namespace ServarrAPI.Model
     {
         Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer);
         Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, Version maxVersion);
+        Task<List<string>> FileNames(int updateId);
     }
 
     public class UpdateFileRepository : BasicRepository<UpdateFileEntity>, IUpdateFileRepository
@@ -58,6 +59,13 @@ namespace ServarrAPI.Model
                 .ConfigureAwait(false);
 
             return result;
+        }
+
+        public async Task<List<string>> FileNames(int updateId)
+        {
+            var result = await Query(Builder().Where<UpdateFileEntity>(f => f.UpdateId == updateId)).ConfigureAwait(false);
+
+            return result.Select(f => f.Filename).ToList();
         }
 
         protected override SqlBuilder Builder()
