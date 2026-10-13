@@ -21,14 +21,17 @@ namespace ServarrAPI.Model
 
         public async Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
         {
-            var all = await All();
+            return Matching(await All(), version, branch, os, runtime, arch);
+        }
 
+        public static List<Notification> Matching(IEnumerable<Notification> all, string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
+        {
             var result2 = all.Where(f => (f.OperatingSystems.Contains(os) || f.OperatingSystems.Count == 0) &&
                                                               (f.Runtimes.Contains(runtime) || f.Runtimes.Count == 0) &&
                                                               (f.Architectures.Contains(arch) || f.Architectures.Count == 0) &&
-                                                              (f.Branches.Contains(branch) || f.Branches.Count == 0) &&
+                                                              (f.Branches.Contains(branch, StringComparer.OrdinalIgnoreCase) || f.Branches.Count == 0) &&
                                                               (VersionValidation(version, f.Versions) || f.Versions.Count == 0));
-            return result2.ToList();
+            return result2.OrderByDescending(f => f.Type).ThenByDescending(f => f.Id).ToList();
         }
 
         private static bool VersionValidation(string version, List<string> allowedVersions)
@@ -38,15 +41,7 @@ namespace ServarrAPI.Model
                 return false;
             }
 
-            foreach (var allowedVersion in allowedVersions)
-            {
-                if (version.StartsWith(allowedVersion.Replace("*", "")))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return allowedVersions.Any(x => x.EndsWith('*') ? version.StartsWith(x[..^1], StringComparison.Ordinal) : version == x);
         }
     }
 }

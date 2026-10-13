@@ -14,6 +14,7 @@ using OperatingSystem = ServarrAPI.Model.OperatingSystem;
 
 namespace ServarrAPI.Controllers.Update
 {
+    [ApiController]
     [Route("v1/[controller]")]
     public class UpdateController : Controller
     {
@@ -90,10 +91,8 @@ namespace ServarrAPI.Controllers.Update
             // Check given version
             if (!Version.TryParse(urlVersion, out var version))
             {
-                return new
-                {
-                    ErrorMessage = "Invalid version number specified."
-                };
+                ModelState.AddModelError("version", "Invalid version number specified.");
+                return ValidationProblem(ModelState);
             }
 
             var userAgentInfo = new UserAgentInfo(Request.Headers["User-Agent"].ToString());

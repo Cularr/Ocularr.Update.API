@@ -47,7 +47,7 @@ namespace ServarrAPI.Model
             arch = SetArch(runtime, arch, os);
             os = SetOs(runtime, os);
 
-            var mappedBranch = GetMappedBranch(branch);
+            var mappedBranch = _config.MapBranch(branch);
 
             return _repo.Find(version, mappedBranch, os, runtime, arch, installer);
         }
@@ -59,7 +59,7 @@ namespace ServarrAPI.Model
             os = SetOs(runtime, os);
 
             var maxVersion = GetMaxVersion(installedVersion, os, runtime, runtimeVersion, excludeMajorVersions);
-            var mappedBranch = GetMappedBranch(branch);
+            var mappedBranch = _config.MapBranch(branch);
 
             return _repo.Find(mappedBranch, os, runtime, arch, installer, count, maxVersion);
         }
@@ -138,23 +138,6 @@ namespace ServarrAPI.Model
             }
 
             return bounds.Any() ? bounds.Min() : null;
-        }
-
-        private string GetMappedBranch(string branch)
-        {
-            var branchRedirects = _config.BranchRedirects;
-
-            if (branchRedirects == null)
-            {
-                return branch;
-            }
-
-            if (branchRedirects.TryGetValue(branch.ToLowerInvariant(), out var mappedBranch))
-            {
-                return mappedBranch;
-            }
-
-            return branch;
         }
     }
 }

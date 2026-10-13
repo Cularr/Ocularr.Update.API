@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ServarrAPI.Model
 {
@@ -18,12 +19,15 @@ namespace ServarrAPI.Model
     {
         private readonly ILogger _logger;
         private readonly INotificationRepository _repo;
+        private readonly Config _config;
 
         public NotificationService(INotificationRepository repo,
-                                   ILogger<INotificationService> logger)
+                                   ILogger<INotificationService> logger,
+                                   IOptions<Config> config)
         {
             _repo = repo;
             _logger = logger;
+            _config = config.Value;
         }
 
         public Task<IEnumerable<Notification>> All()
@@ -33,7 +37,7 @@ namespace ServarrAPI.Model
 
         public Task<List<Notification>> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch)
         {
-            return _repo.Find(version, branch, os, runtime, arch);
+            return _repo.Find(version, _config.MapBranch(branch), os, runtime, arch);
         }
 
         public Task<Notification> Insert(Notification entity)

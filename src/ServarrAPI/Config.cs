@@ -27,5 +27,8 @@ namespace ServarrAPI
         public List<MonoGate> MonoGates { get; set; }
         public List<Trigger> Triggers { get; set; }
         public Dictionary<string, string> BranchRedirects { get; set; }
+
+        public string MapBranch(string branch) =>
+            branch != null && BranchRedirects != null && BranchRedirects.TryGetValue(branch.ToLowerInvariant(), out var mappedBranch) ? mappedBranch : branch;
     }
 }

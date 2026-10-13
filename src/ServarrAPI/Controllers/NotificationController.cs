@@ -6,6 +6,7 @@ using ServarrAPI.Util;
 
 namespace ServarrAPI.Controllers
 {
+    [ApiController]
     [Route("v1/[controller]")]
     public class NotificationController : Controller
     {
@@ -21,7 +22,7 @@ namespace ServarrAPI.Controllers
                                                    [FromQuery(Name = "version")] string urlVersion,
                                                    [FromQuery(Name = "os")] OperatingSystem operatingSystem,
                                                    [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
-                                                   [FromQuery(Name = "runtime")] Runtime runtime = Runtime.DotNet,
+                                                   [FromQuery(Name = "runtime")] Runtime runtime = Runtime.NetCore,
                                                    [FromQuery(Name = "arch")] Architecture arch = Architecture.X64)
         {
             return await _notificationService.Find(urlVersion, updateBranch, operatingSystem, runtime, arch);
