@@ -41,10 +41,8 @@ services:
       # Database Connection
       - ConnectionStrings__Database=Host=db;Port=5432;Username=${DB_USER:-ocularr};Password=${DB_PASSWORD:?Set DB_PASSWORD};Database=${DB_NAME:-ocularr};Enlist=false
 
-      - Stats__Url=${STATS_URL:-}
-      - Stats__Token=${STATS_TOKEN:-}
-      - Stats__Org=${STATS_ORG:-}
-      - Stats__Bucket=${STATS_BUCKET:-telegraf}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}
       - ASPNETCORE_FORWARDEDHEADERS_ENABLED=${FORWARDED_HEADERS_ENABLED:-true}
     volumes:
       - ./data:/data

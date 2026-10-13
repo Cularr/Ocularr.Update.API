@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using ServarrAPI.Datastore;
 using ServarrAPI.Model;
@@ -22,18 +21,16 @@ namespace ServarrAPI.Controllers.Update
     public class UpdateController : Controller
     {
         private readonly IUpdateFileService _updateFileService;
-        private readonly IUsageStats _usageStats;
+        private readonly UpdateChecks _updateChecks;
         private readonly IBackgroundTaskQueue _queue;
         private readonly IServiceScopeFactory _serviceScopeFactory;
-        private readonly string _project;
 
-        public UpdateController(IUpdateFileService updateFileService, IUsageStats usageStats, IBackgroundTaskQueue queue, IServiceScopeFactory serviceScopeFactory, IOptions<Config> config)
+        public UpdateController(IUpdateFileService updateFileService, UpdateChecks updateChecks, IBackgroundTaskQueue queue, IServiceScopeFactory serviceScopeFactory)
         {
             _updateFileService = updateFileService;
-            _usageStats = usageStats;
+            _updateChecks = updateChecks;
             _queue = queue;
             _serviceScopeFactory = serviceScopeFactory;
-            _project = config.Value.Project;
         }
 
         [HttpPost]
@@ -93,9 +90,8 @@ namespace ServarrAPI.Controllers.Update
         public async Task<object> GetUpdates([FromRoute(Name = "branch")] string updateBranch,
                                              [FromQuery(Name = "version")] string urlVersion,
                                              [FromQuery(Name = "os")] OperatingSystem operatingSystem,
-                                             [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
                                              [FromQuery(Name = "arch")] Architecture arch,
-                                             [FromQuery(Name = "dbType")] string dbType = "SQLite",
+                                             [FromQuery(Name = "dbType")] string dbType,
                                              [FromQuery(Name = "active")] bool? activeInstall = null)
         {
             Response.Headers[HeaderNames.CacheControl] = GetCacheControlHeader(DateTime.UtcNow);
@@ -107,28 +103,10 @@ namespace ServarrAPI.Controllers.Update
                 return ValidationProblem(ModelState);
             }
 
-            var userAgentInfo = new UserAgentInfo(Request.Headers["User-Agent"].ToString());
-
             // Dont' send metrics for dev/debug instances
             if (version.Major < 10 && activeInstall.HasValue)
             {
-                var remoteIpAddress = Request.HttpContext.Connection.RemoteIpAddress;
-
-                _usageStats.Write(remoteIpAddress?.ToString(),
-                    new Dictionary<string, string>
-                    {
-                        { "program", _project },
-                        { "requestApp", userAgentInfo.App ?? "Unknown" },
-                        { "branch", updateBranch },
-                        { "version", urlVersion },
-                        { "os", operatingSystem.ToString() },
-                        { "osName", userAgentInfo.Name ?? "Unknown" },
-                        { "osVersion", userAgentInfo.OsVersion ?? "Unknown" },
-                        { "runtimeVersion", urlRuntimeVersion },
-                        { "arch", arch.ToString() },
-                        { "activeinstall", activeInstall.Value.ToString() },
-                        { "dbType", dbType }
-                    });
+                _updateChecks.Record(version, updateBranch, operatingSystem, arch, dbType, activeInstall.Value);
             }
 
             var files = await _updateFileService.Find(updateBranch, operatingSystem, arch, false, 1);

@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Serilog;
 using ServarrAPI.Datastore;
 using ServarrAPI.Datastore.Migration.Framework;
@@ -53,7 +55,6 @@ namespace ServarrAPI
                 .Bind(Config.GetSection("Update"))
                 .Validate(x => !string.IsNullOrWhiteSpace(x.ApiKey), "Update:ApiKey is required.")
                 .ValidateOnStart();
-            services.Configure<StatsOptions>(Config.GetSection("Stats"));
 
             services.AddSingleton<IMigrationController, MigrationController>();
             services.AddSingleton<IDatabase, Database>();
@@ -66,7 +67,17 @@ namespace ServarrAPI
             services.AddSingleton(x => GithubReleaseSource.CreateClient(x.GetRequiredService<IOptions<Config>>().Value));
             services.AddHttpClient(nameof(GithubReleaseSource), (x, client) => GithubReleaseSource.ConfigureDownloads(client, x.GetRequiredService<IOptions<Config>>().Value));
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-            services.AddSingleton<IUsageStats, UsageStats>();
+            services.AddSingleton<UpdateChecks>();
+
+            if (!string.IsNullOrWhiteSpace(Config["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+            {
+                services.AddOpenTelemetry()
+                    .ConfigureResource(resource => resource.AddService(UpdateChecks.MeterName))
+                    .WithMetrics(metrics => metrics
+                        .AddMeter(UpdateChecks.MeterName)
+                        .AddView(UpdateChecks.CounterName, new MetricStreamConfiguration { CardinalityLimit = 20_000 })
+                        .AddOtlpExporter());
+            }
 
             services.AddTransient<GithubReleaseSource>();
 

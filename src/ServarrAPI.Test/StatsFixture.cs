@@ -4,83 +4,97 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Diagnostics.Metrics.Testing;
 using NUnit.Framework;
+using OpenTelemetry.Metrics;
 using ServarrAPI.Model;
 using ServarrAPI.Stats;
-using Architecture = System.Runtime.InteropServices.Architecture;
-using OperatingSystem = ServarrAPI.Model.OperatingSystem;
 
 namespace ServarrAPI.Test
 {
     [TestFixture]
     public class StatsFixture
     {
-        private const string UserAgent = "Ocularr/5.0.0.100 (ubuntu 24.04)";
+        private const string Update = "/v1/update/master?version=5.0.0.100&os=linux&runtime=netcore&runtimeVer=10.0.0&arch=Arm64&dbType=PostgreSQL";
 
-        [TestCase("&active=true", "True")]
-        [TestCase("&active=false", "False")]
+        [TestCase("&active=true", true)]
+        [TestCase("&active=false", false)]
         [TestCase("", null)]
-        public async Task usage_is_recorded_only_when_the_client_sends_active(string active, string expected)
+        public async Task checks_are_counted_only_when_the_client_sends_active(string active, bool? expected)
         {
-            var stats = new RecordingStats();
-            using var factory = new ServiceFactory(services: x => x
-                .AddSingleton<IUsageStats>(stats)
-                .AddSingleton<IUpdateFileService, EmptyUpdateFiles>());
-            using var client = factory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            using var factory = Create();
+            using var checks = Collector(factory);
 
-            var response = await client.GetAsync($"/v1/update/master?version=5.0.0.100&os=linux&runtime=netcore&runtimeVer=10.0.0&arch=X64&dbType=PostgreSQL{active}");
+            await factory.CreateClient().GetAsync(Update + active);
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(stats.Tags.Select(x => x["activeinstall"]), Is.EqualTo(expected == null ? Array.Empty<string>() : new[] { expected }));
+            Assert.That(checks.GetMeasurementSnapshot().Select(x => (bool?)x.Tags["ocularr.install.active"]), Is.EqualTo(expected == null ? Array.Empty<bool?>() : new[] { expected }));
         }
 
         [Test]
-        public async Task usage_tags_name_the_ocularr_install()
+        public async Task a_check_carries_only_the_install_attributes()
         {
-            var stats = new RecordingStats();
-            using var factory = new ServiceFactory(services: x => x
-                .AddSingleton<IUsageStats>(stats)
-                .AddSingleton<IUpdateFileService, EmptyUpdateFiles>());
-            using var client = factory.CreateClient();
-            client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            using var factory = Create();
+            using var checks = Collector(factory);
+            var client = factory.CreateClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Ocularr/5.0.0.100 (ubuntu 24.04)");
 
-            await client.GetAsync("/v1/update/master?version=5.0.0.100&os=linux&runtime=netcore&runtimeVer=10.0.0&arch=Arm64&dbType=PostgreSQL&active=true");
+            await client.GetAsync(Update + "&active=true");
 
-            Assert.That(stats.Tags.Single(), Is.SupersetOf(new Dictionary<string, string>
+            var check = checks.GetMeasurementSnapshot().Single();
+            Assert.Multiple(() =>
             {
-                ["program"] = "Ocularr",
-                ["requestApp"] = "ocularr",
-                ["branch"] = "master",
-                ["version"] = "5.0.0.100",
-                ["os"] = "Linux",
-                ["osName"] = "ubuntu",
-                ["osVersion"] = "24.04",
-                ["runtimeVersion"] = "10.0.0",
-                ["arch"] = "Arm64",
-                ["dbType"] = "PostgreSQL"
-            }));
+                Assert.That(check.Value, Is.EqualTo(1));
+                Assert.That(check.Tags, Is.EquivalentTo(new Dictionary<string, object>
+                {
+                    ["ocularr.install.version"] = "5.0.0.100",
+                    ["ocularr.install.branch"] = "master",
+                    ["ocularr.install.platform"] = "linux",
+                    ["ocularr.install.arch"] = "arm64",
+                    ["ocularr.install.database"] = "postgresql",
+                    ["ocularr.install.active"] = true
+                }));
+            });
         }
 
-        [Test]
-        public async Task development_builds_are_not_recorded()
+        [TestCase("Main", "SQLite", "main", "sqlite")]
+        [TestCase("v5-develop", "Oracle", "v5-develop", "other")]
+        [TestCase("a-branch-name-that-is-far-too-long-to-count", "", "other", "other")]
+        [TestCase("evil%20branch", null, "other", "other")]
+        public async Task free_text_attributes_are_normalized(string branch, string database, string expectedBranch, string expectedDatabase)
         {
-            var stats = new RecordingStats();
-            using var factory = new ServiceFactory(services: x => x
-                .AddSingleton<IUsageStats>(stats)
-                .AddSingleton<IUpdateFileService, EmptyUpdateFiles>());
-            using var client = factory.CreateClient();
+            using var factory = Create();
+            using var checks = Collector(factory);
 
-            await client.GetAsync("/v1/update/master?version=10.0.0.1&os=linux&runtime=netcore&arch=X64&active=true");
+            await factory.CreateClient().GetAsync($"/v1/update/{branch}?version=5.0.0.100&os=linux&arch=X64&active=true{(database == null ? string.Empty : "&dbType=" + database)}");
 
-            Assert.That(stats.Tags, Is.Empty);
+            var tags = checks.GetMeasurementSnapshot().Single().Tags;
+            Assert.That((tags["ocularr.install.branch"], tags["ocularr.install.database"]), Is.EqualTo(((object)expectedBranch, (object)expectedDatabase)));
         }
 
         [Test]
-        public async Task points_are_written_as_line_protocol()
+        public async Task development_builds_are_not_counted()
+        {
+            using var factory = Create();
+            using var checks = Collector(factory);
+
+            await factory.CreateClient().GetAsync("/v1/update/master?version=10.0.0.1&os=linux&arch=X64&active=true");
+
+            Assert.That(checks.GetMeasurementSnapshot(), Is.Empty);
+        }
+
+        [Test]
+        public void metrics_are_not_exported_without_an_otlp_endpoint()
+        {
+            using var factory = Create();
+
+            Assert.That(factory.Services.GetService<MeterProvider>(), Is.Null);
+        }
+
+        [Test]
+        public async Task checks_are_exported_over_otlp()
         {
             var port = FreePort();
             using var listener = new HttpListener();
@@ -88,37 +102,38 @@ namespace ServarrAPI.Test
             listener.Start();
             var received = ReceiveAsync(listener);
 
-            using (var stats = new UsageStats(Options.Create(new StatsOptions { Url = $"http://127.0.0.1:{port}", Token = "user:pass", Org = "-", Bucket = "telegraf" })))
+            using (var factory = Create(new Dictionary<string, string>
             {
-                stats.Write("192.0.2.1", new Dictionary<string, string> { ["program"] = "Ocularr", ["runtimeVersion"] = null, ["osVersion"] = string.Empty });
+                ["OTEL_EXPORTER_OTLP_ENDPOINT"] = $"http://127.0.0.1:{port}/v1/metrics",
+                ["OTEL_EXPORTER_OTLP_PROTOCOL"] = "http/protobuf"
+            }))
+            {
+                await factory.CreateClient().GetAsync(Update + "&active=true");
             }
 
-            var (query, authorization, body) = await received.WaitAsync(TimeSpan.FromSeconds(10));
+            var (path, body) = await received.WaitAsync(TimeSpan.FromSeconds(30));
 
             Assert.Multiple(() =>
             {
-                Assert.That(query, Does.Contain("bucket=telegraf"));
-                Assert.That(authorization, Is.EqualTo("Token user:pass"));
-                Assert.That(body, Does.StartWith("userstats,program=Ocularr source=\"192.0.2.1\" "));
+                Assert.That(path, Is.EqualTo("/v1/metrics"));
+                Assert.That(body, Does.Contain(UpdateChecks.CounterName).And.Contains("ocularr.install.arch").And.Contains("arm64"));
             });
         }
 
-        [Test]
-        public void an_empty_url_disables_stats()
-        {
-            using var stats = new UsageStats(Options.Create(new StatsOptions()));
+        private static ServiceFactory Create(Dictionary<string, string> settings = null) =>
+            new ServiceFactory(settings, x => x.AddSingleton<IUpdateFileService, EmptyUpdateFiles>());
 
-            Assert.DoesNotThrow(() => stats.Write("192.0.2.1", new Dictionary<string, string>()));
-        }
+        private static MetricCollector<long> Collector(ServiceFactory factory) =>
+            new MetricCollector<long>(factory.Services.GetRequiredService<System.Diagnostics.Metrics.IMeterFactory>(), UpdateChecks.MeterName, UpdateChecks.CounterName);
 
-        private static async Task<(string Query, string Authorization, string Body)> ReceiveAsync(HttpListener listener)
+        private static async Task<(string Path, string Body)> ReceiveAsync(HttpListener listener)
         {
             var context = await listener.GetContextAsync();
-            using var reader = new StreamReader(context.Request.InputStream);
-            var body = await reader.ReadToEndAsync();
-            context.Response.StatusCode = 204;
+            using var body = new MemoryStream();
+            await context.Request.InputStream.CopyToAsync(body);
+            context.Response.StatusCode = 200;
             context.Response.Close();
-            return (context.Request.Url.Query, context.Request.Headers["Authorization"], body);
+            return (context.Request.Url.AbsolutePath, Encoding.UTF8.GetString(body.ToArray()));
         }
 
         private static int FreePort()
@@ -126,13 +141,6 @@ namespace ServarrAPI.Test
             using var socket = new TcpListener(IPAddress.Loopback, 0);
             socket.Start();
             return ((IPEndPoint)socket.LocalEndpoint).Port;
-        }
-
-        private sealed class RecordingStats : IUsageStats
-        {
-            public List<IReadOnlyDictionary<string, string>> Tags { get; } = new ();
-
-            public void Write(string source, IReadOnlyDictionary<string, string> tags) => Tags.Add(tags);
         }
     }
 }
