@@ -50,11 +50,15 @@ namespace Ocularr.Update.API.Test
             });
         }
 
-        [TestCase(HttpStatusCode.BadRequest, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadRequest)]
-        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_client\"}", HttpStatusCode.BadGateway)]
-        [TestCase(HttpStatusCode.InternalServerError, "{\"error\":\"server_error\"}", HttpStatusCode.BadGateway)]
-        [TestCase(HttpStatusCode.BadGateway, "<html>", HttpStatusCode.BadGateway)]
-        public async Task upstream_failures_are_reported(HttpStatusCode upstream, string body, HttpStatusCode expected)
+        [TestCase(HttpStatusCode.BadRequest, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadRequest, "invalid_grant")]
+        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadRequest, "invalid_grant")]
+        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_request\",\"message\":\"The refresh token is invalid.\"}", HttpStatusCode.BadRequest, "invalid_request")]
+        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_client\"}", HttpStatusCode.BadGateway, null)]
+        [TestCase(HttpStatusCode.Unauthorized, "<html>", HttpStatusCode.BadGateway, null)]
+        [TestCase(HttpStatusCode.Forbidden, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadGateway, null)]
+        [TestCase(HttpStatusCode.InternalServerError, "{\"error\":\"server_error\"}", HttpStatusCode.BadGateway, null)]
+        [TestCase(HttpStatusCode.BadGateway, "<html>", HttpStatusCode.BadGateway, null)]
+        public async Task upstream_failures_are_reported(HttpStatusCode upstream, string body, HttpStatusCode expected, string expectedError)
         {
             var tokens = new FakeTokenEndpoint { StatusCode = upstream, Body = body };
             using var factory = OAuthService.Create(tokens);
@@ -65,7 +69,15 @@ namespace Ocularr.Update.API.Test
             Assert.Multiple(() =>
             {
                 Assert.That(response.StatusCode, Is.EqualTo(expected));
-                Assert.That(content, expected == HttpStatusCode.BadRequest ? Does.Contain("invalid_grant") : Does.Not.Contain("error\":\"server_error"));
+
+                if (expectedError == null)
+                {
+                    Assert.That(content, Does.Not.Contain("\"error\""));
+                }
+                else
+                {
+                    Assert.That(JsonDocument.Parse(content).RootElement.GetProperty("error").GetString(), Is.EqualTo(expectedError));
+                }
             });
         }
 

@@ -91,7 +91,7 @@ namespace Ocularr.Update.API.Release.Github
                 var version = release.TagName.Substring(1);
 
                 // determine the branch
-                var branch = release.Prerelease ? "develop" : "master";
+                var branch = release.Prerelease ? Config.Develop : Config.Master;
 
                 if (await ProcessRelease(release, branch, version))
                 {
@@ -99,9 +99,9 @@ namespace Ocularr.Update.API.Release.Github
                 }
 
                 // releases on master should also appear on develop
-                if (branch == "master" && await ProcessRelease(release, "develop", version))
+                if (branch == Config.Master && await ProcessRelease(release, Config.Develop, version))
                 {
-                    updated.Add("develop");
+                    updated.Add(Config.Develop);
                 }
             }
 

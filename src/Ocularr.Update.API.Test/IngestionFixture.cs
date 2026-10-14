@@ -85,6 +85,16 @@ namespace Ocularr.Update.API.Test
         }
 
         [Test]
+        public async Task an_unknown_branch_is_served_from_master()
+        {
+            _github.AddRelease("5.0.0.2", false, string.Format(Linux, "5.0.0.2"));
+
+            await Refresh();
+
+            Assert.That(await Latest("invalid_branch"), Is.EqualTo("5.0.0.2"));
+        }
+
+        [Test]
         public async Task the_main_branch_is_served_from_master()
         {
             _github.AddRelease("5.0.0.2", false, string.Format(Linux, "5.0.0.2"));

@@ -32,6 +32,10 @@ namespace Ocularr.Update.API.Test
         [TestCase("main", "master")]
         [TestCase("Main", "master")]
         [TestCase("develop", "develop")]
+        [TestCase("Develop", "develop")]
+        [TestCase("Master", "master")]
+        [TestCase("invalid_branch", "master")]
+        [TestCase("nightly", "master")]
         [TestCase(null, null)]
         public void branches_follow_redirects(string branch, string expected) =>
             Assert.That(new Config { BranchRedirects = new Dictionary<string, string> { ["main"] = "master" } }.MapBranch(branch), Is.EqualTo(expected));

@@ -3,12 +3,14 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Duende.IdentityModel;
 using Duende.IdentityModel.Client;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -156,7 +158,9 @@ namespace Ocularr.Update.API.OAuth
 
             if (response.IsError)
             {
-                return response.ErrorType == ResponseErrorType.Protocol ? BadRequest(new { error = response.Error }) : StatusCode(502);
+                var error = response.TryGet(OidcConstants.TokenResponse.Error);
+
+                return response.ErrorType == ResponseErrorType.Protocol || IsRejectedToken(response.HttpStatusCode, error) ? BadRequest(new { error }) : StatusCode(502);
             }
 
             return Ok(new OAuthToken
@@ -167,6 +171,9 @@ namespace Ocularr.Update.API.OAuth
                 RefreshToken = response.RefreshToken
             });
         }
+
+        private static bool IsRejectedToken(HttpStatusCode status, string error) =>
+            status == HttpStatusCode.Unauthorized && error is OidcConstants.TokenErrors.InvalidGrant or OidcConstants.TokenErrors.InvalidRequest;
 
         private static ClientCredentialStyle CredentialStyle(OAuthProvider settings) =>
             settings.ClientAuthentication == ClientAuthentication.Post ? ClientCredentialStyle.PostBody : ClientCredentialStyle.AuthorizationHeader;
