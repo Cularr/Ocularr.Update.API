@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Ocularr.Update.API.Test/Ocularr.Update.API.Test.csproj" />
+  <Project Path="Ocularr.Update.API/Ocularr.Update.API.csproj" />
+</Solution>

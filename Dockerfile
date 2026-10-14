@@ -11,7 +11,7 @@ ARG config=Release
 
 COPY src ./src
 
-RUN dotnet publish -c $config --no-self-contained src/*.sln \
+RUN dotnet publish -c $config --no-self-contained src/*.slnx \
     -p:Version=${VERSION} \
     -p:AssemblyVersion=${VERSION} \
     -p:FileVersion=${VERSION} \
