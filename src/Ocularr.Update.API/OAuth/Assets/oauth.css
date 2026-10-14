@@ -1,0 +1,271 @@
+:root {
+  --bg: #eef1f8;
+  --glow1: rgba(134, 127, 190, 0.24);
+  --glow2: rgba(33, 51, 97, 0.16);
+  --paper: #ffffff;
+  --ink: #141b33;
+  --muted: #5b6380;
+  --faint: #868ca6;
+  --line: #dde2ee;
+  --chip: #f4f6fb;
+  --accent: #213361;
+  --accent-hover: #2d4485;
+  --accent-ink: #ffffff;
+  --lavender: #867fbe;
+  --sky: #b0c3f0;
+  --ok: #2f8f6b;
+  --error: #c2414b;
+  --shadow: 0 1px 2px rgba(20, 27, 51, 0.06), 0 16px 48px -16px rgba(33, 51, 97, 0.28);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f20;
+    --glow1: rgba(134, 127, 190, 0.18);
+    --glow2: rgba(33, 51, 97, 0.6);
+    --paper: #121a33;
+    --ink: #eef1f8;
+    --muted: #a6aecb;
+    --faint: #78809e;
+    --line: #253157;
+    --chip: #0d1430;
+    --accent: #b0c3f0;
+    --accent-hover: #cbd8f7;
+    --accent-ink: #121a33;
+    --ok: #5fd0a3;
+    --error: #ff8a93;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 24px 64px -24px rgba(0, 0, 0, 0.7);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 100%;
+  margin: 0;
+  padding: 24px 16px;
+  background:
+    radial-gradient(60rem 40rem at 10% -10%, var(--glow1), transparent 60%),
+    radial-gradient(50rem 40rem at 110% 110%, var(--glow2), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px 28px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--chip);
+}
+
+.mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  object-fit: contain;
+}
+
+.mark.ocularr {
+  border: 0;
+  background: none;
+}
+
+.mark.ocularr img {
+  padding: 0;
+}
+
+.monogram {
+  color: var(--lavender);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.link {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 24px;
+}
+
+.link::before {
+  position: absolute;
+  top: 11px;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background-image: linear-gradient(90deg, var(--lavender) 50%, transparent 0);
+  background-size: 12px 2px;
+  content: "";
+  animation: flow 1s linear infinite;
+}
+
+.badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ok);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ok);
+}
+
+.badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.failed .link::before {
+  background-image: linear-gradient(90deg, var(--line) 50%, transparent 0);
+  animation: none;
+}
+
+.failed .badge {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+@keyframes flow {
+  to {
+    background-position: 12px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link::before {
+    animation: none;
+  }
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--lavender);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.lead {
+  margin: 0;
+  color: var(--muted);
+}
+
+.address {
+  display: block;
+  margin: 16px 0 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--ink);
+  font: 500 14px/1.45 ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+}
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.button:hover {
+  background: var(--accent-hover);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 2px;
+}
+
+.button svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.button.secondary {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.button.secondary:hover {
+  border-color: var(--faint);
+  background: var(--chip);
+  color: var(--ink);
+}
+
+footer {
+  color: var(--faint);
+  font-size: 12px;
+}

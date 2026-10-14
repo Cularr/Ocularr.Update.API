@@ -6,7 +6,6 @@ using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,7 +63,7 @@ namespace Ocularr.Update.API.OAuth
 
             if (!OAuthStateProtector.IsCallback(state))
             {
-                return Page(400, "The address to return to is not an Ocularr sign-in page.");
+                return Page(400, provider, settings, "Not an Ocularr address", "The address to return to is not an Ocularr sign-in page. Start the sign-in again from Ocularr.");
             }
 
             var verifier = settings.Pkce == PkceMethod.None ? null : Base64Url.EncodeToString(RandomNumberGenerator.GetBytes(32));
@@ -98,12 +97,12 @@ namespace Ocularr.Update.API.OAuth
 
             if (saved == null || !string.Equals(saved.Provider, provider, StringComparison.OrdinalIgnoreCase) || !ApiKeyAttribute.Matches(saved.Nonce, nonce))
             {
-                return Page(400, "This sign-in has expired or is invalid. Start it again from Ocularr.");
+                return Page(400, provider, settings, "Sign-in expired", "This sign-in has expired or is invalid. Start it again from Ocularr.");
             }
 
             if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(code))
             {
-                return Page(400, "The sign-in was cancelled or refused. Start it again from Ocularr.");
+                return Page(400, provider, settings, "Sign-in cancelled", "The sign-in was cancelled or refused. Start it again from Ocularr.");
             }
 
             var response = await Client().RequestAuthorizationCodeTokenAsync(
@@ -121,7 +120,7 @@ namespace Ocularr.Update.API.OAuth
 
             if (response.IsError || string.IsNullOrEmpty(response.AccessToken))
             {
-                return Page(502, "The sign-in could not be completed. Start it again from Ocularr.");
+                return Page(502, provider, settings, "Sign-in failed", "The sign-in could not be completed. Start it again from Ocularr.");
             }
 
             var link = QueryHelpers.AddQueryString(saved.Callback, new Dictionary<string, string>
@@ -131,7 +130,7 @@ namespace Ocularr.Update.API.OAuth
                 ["refresh_token"] = response.RefreshToken ?? string.Empty
             });
 
-            return Page(200, "Signed in. Continue only if you started this sign-in from your Ocularr at this address:", link);
+            return Page(200, provider, settings, "Signed in", "Continue only if you started this sign-in from your Ocularr at this address:", saved.Callback, link);
         }
 
         [HttpGet("renew")]
@@ -189,24 +188,29 @@ namespace Ocularr.Update.API.OAuth
             Response.Headers.Pragma = "no-cache";
         }
 
-        private ContentResult Page(int statusCode, string message, string link = null)
+        private ContentResult Page(int statusCode, string provider, OAuthProvider settings, string title, string message, string callback = null, string link = null)
         {
+            var page = new OAuthPage
+            {
+                Provider = string.IsNullOrWhiteSpace(settings.Name) ? provider : settings.Name,
+                IconUrl = settings.IconUrl,
+                Title = title,
+                Message = message,
+                Address = callback,
+                Link = link
+            };
+
             NoStore();
-            Response.Headers.ContentSecurityPolicy = "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+            Response.Headers.ContentSecurityPolicy = page.ContentSecurityPolicy;
             Response.Headers["Referrer-Policy"] = "no-referrer";
             Response.Headers.XFrameOptions = "DENY";
             Response.Headers.XContentTypeOptions = "nosniff";
-
-            var html = HtmlEncoder.Default;
-            var continueLink = link == null
-                ? string.Empty
-                : $"<p><a href=\"{html.Encode(link)}\">Continue to {html.Encode(new Uri(link).Authority)}</a></p>";
 
             return new ContentResult
             {
                 StatusCode = statusCode,
                 ContentType = "text/html; charset=utf-8",
-                Content = $"<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width\"><title>Ocularr sign-in</title></head><body><p>{html.Encode(message)}</p>{continueLink}</body></html>"
+                Content = page.Render(Request.PathBase)
             };
         }
     }

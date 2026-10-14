@@ -31,6 +31,12 @@
     <PackageReference Include="Octokit" Version="14.0.0" />
   </ItemGroup>
   
+  <!-- OAuth sign-in page -->
+  <ItemGroup>
+    <EmbeddedResource Include="OAuth\oauth.html" LogicalName="Ocularr.Update.API.OAuth.oauth.html" />
+    <EmbeddedResource Include="OAuth\Assets\*" LogicalName="Ocularr.Update.API.OAuth.Assets.%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <!-- Import the ApiInfo.targets to generate version info -->
   <Import Project="../ApiInfo.targets" />
 </Project>

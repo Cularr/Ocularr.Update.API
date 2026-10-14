@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Ocularr.Update.API.Datastore;
@@ -115,6 +116,17 @@ namespace Ocularr.Update.API
             }
 
             app.UseSerilogRequestLogging();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new EmbeddedFileProvider(typeof(Startup).Assembly, OAuthPage.AssetsNamespace),
+                RequestPath = OAuthPage.AssetsPath,
+                OnPrepareResponse = context =>
+                {
+                    context.Context.Response.Headers.CacheControl = "public, max-age=3600";
+                    context.Context.Response.Headers.XContentTypeOptions = "nosniff";
+                }
+            });
 
             app.UseRouting();
 

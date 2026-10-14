@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex">
+  <title>{{title}} &middot; Ocularr</title>
+  <link rel="icon" type="image/svg+xml" href="{{assets}}/gutter.svg">
+  <link rel="stylesheet" href="{{assets}}/oauth.css">
+  <script src="{{assets}}/oauth.js" defer></script>
+</head>
+<body>
+  <main class="{{state}}">
+    <div class="flow" aria-hidden="true">
+      <div class="mark">
+        {{#icon}}<img src="{{icon}}" alt="">{{/icon}}
+        {{#monogram}}<span class="monogram">{{initial}}</span>{{/monogram}}
+      </div>
+      <div class="link">
+        <span class="badge">
+          {{#signed-in}}<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5l2.25 2.25L9.5 3.75"/></svg>{{/signed-in}}
+          {{#failed}}<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 3.5l5 5m0-5l-5 5"/></svg>{{/failed}}
+        </span>
+      </div>
+      <div class="mark ocularr">
+        <img src="{{assets}}/ocularr.svg" alt="">
+      </div>
+    </div>
+    <p class="eyebrow">{{provider}} &rarr; Ocularr</p>
+    <h1>{{title}}</h1>
+    <p class="lead">{{message}}</p>
+    {{#signed-in}}
+    <code class="address">{{address}}</code>
+    <div class="actions">
+      <a id="continue" class="button" href="{{link}}">Continue<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      <button id="close" class="button secondary" type="button">I didn't start this</button>
+    </div>
+    {{/signed-in}}
+  </main>
+  <footer>Ocularr sign-in</footer>
+</body>
+</html>

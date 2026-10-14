@@ -48,6 +48,11 @@ namespace Ocularr.Update.API.OAuth
         public ClientAuthentication ClientAuthentication { get; set; }
 
         public PkceMethod Pkce { get; set; }
+
+        public string Name { get; set; }
+
+        [Url]
+        public string IconUrl { get; set; }
     }
 
     public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>
@@ -63,6 +68,10 @@ namespace Ocularr.Update.API.OAuth
                 if (!Validator.TryValidateObject(settings, new ValidationContext(settings), results, true))
                 {
                     failures.AddRange(results.Select(x => $"OAuth:Providers:{provider}: {x.ErrorMessage}"));
+                }
+                else if (!string.IsNullOrEmpty(settings.IconUrl) && !settings.IconUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    failures.Add($"OAuth:Providers:{provider}: The IconUrl field must be an https URL.");
                 }
             }
 

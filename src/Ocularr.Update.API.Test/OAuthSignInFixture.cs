@@ -144,7 +144,7 @@ namespace Ocularr.Update.API.Test
             var response = await client.GetAsync($"/v1/oauth/MangaBaka/auth?code=abc&state={Uri.EscapeDataString(query["state"])}");
             var page = await response.Content.ReadAsStringAsync();
             var request = _tokens.Requests.Single();
-            var link = WebUtility.HtmlDecode(page.Split("href=\"")[1].Split('"')[0]);
+            var link = WebUtility.HtmlDecode(page.Split("id=\"continue\" class=\"button\" href=\"")[1].Split('"')[0]);
 
             Assert.Multiple(() =>
             {
@@ -158,7 +158,8 @@ namespace Ocularr.Update.API.Test
                 Assert.That(request.Form.ContainsKey("client_secret"), Is.False);
                 Assert.That(link, Does.StartWith(OAuthService.Callback + "?"));
                 Assert.That(OAuthService.Query(link), Is.EquivalentTo(new Dictionary<string, string> { ["access_token"] = "access&1", ["expires_in"] = "3600", ["refresh_token"] = "refresh 1" }));
-                Assert.That(page, Does.Contain("Continue to ocularr.home.test:8787"));
+                Assert.That(page, Does.Contain("<code class=\"address\">https://ocularr.home.test:8787/oauth.html</code>"));
+                Assert.That(page, Does.Contain("id=\"close\""));
                 Assert.That(page, Does.Not.Contain("access&1"));
                 Assert.That(page, Does.Contain("&amp;expires_in=3600&amp;"));
                 Assert.That(response.Headers.CacheControl.NoStore, Is.True);
@@ -167,6 +168,90 @@ namespace Ocularr.Update.API.Test
                 Assert.That(response.Headers.GetValues("X-Frame-Options").Single(), Is.EqualTo("DENY"));
                 Assert.That(response.Headers.GetValues("X-Content-Type-Options").Single(), Is.EqualTo("nosniff"));
             });
+        }
+
+        [Test]
+        public async Task the_page_shows_the_provider_and_allows_only_its_own_assets_and_icon_host()
+        {
+            using var factory = OAuthService.Create(_tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:Name"] = "MangaBaka", ["OAuth:Providers:mangabaka:IconUrl"] = "https://icons.test/baka.svg" });
+            var client = factory.Client();
+            var query = await Authorize(client, "mangabaka");
+
+            var response = await client.GetAsync($"/v1/oauth/mangabaka/auth?code=abc&state={Uri.EscapeDataString(query["state"])}");
+            var page = await response.Content.ReadAsStringAsync();
+            var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(page, Does.Contain("MangaBaka &rarr; Ocularr"));
+                Assert.That(page, Does.Contain("<img src=\"https://icons.test/baka.svg\""));
+                Assert.That(page, Does.Contain("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/v1/oauth/assets/gutter.svg\">"));
+                Assert.That(page, Does.Not.Contain("<style"));
+                Assert.That(page, Does.Not.Contain("{{"));
+                Assert.That(csp, Does.Contain("script-src 'self'; style-src 'self'; img-src 'self' https://icons.test;"));
+                Assert.That(csp, Does.Not.Contain("unsafe"));
+            });
+        }
+
+        [Test]
+        public async Task a_placeholder_in_the_callback_address_is_not_filled_in()
+        {
+            const string callback = "https://ocularr.home.test/{{link}}/oauth.html";
+            using var factory = OAuthService.Create(_tokens);
+            var client = factory.Client();
+            var authorize = await client.GetAsync($"/v1/oauth/mangabaka/authorize?state={Uri.EscapeDataString(callback)}");
+            var state = OAuthService.Query(authorize.Headers.Location.ToString())["state"];
+
+            var page = await (await client.GetAsync($"/v1/oauth/mangabaka/auth?code=abc&state={Uri.EscapeDataString(state)}")).Content.ReadAsStringAsync();
+
+            Assert.That(page, Does.Contain($"<code class=\"address\">{callback}</code>"));
+        }
+
+        [Test]
+        public async Task a_failed_sign_in_page_has_no_continue_link()
+        {
+            using var factory = OAuthService.Create(_tokens);
+            var client = factory.Client();
+            var state = (await Authorize(client, "mangabaka"))["state"];
+
+            var response = await client.GetAsync($"/v1/oauth/mangabaka/auth?error=access_denied&state={Uri.EscapeDataString(state)}");
+            var page = await response.Content.ReadAsStringAsync();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(page, Does.Contain("Sign-in cancelled"));
+                Assert.That(page, Does.Contain("mangabaka &rarr; Ocularr"));
+                Assert.That(page, Does.Not.Contain("id=\"continue\""));
+                Assert.That(response.Headers.GetValues("Content-Security-Policy").Single(), Does.Contain("img-src 'self';"));
+            });
+        }
+
+        [TestCase("oauth.css", "text/css")]
+        [TestCase("oauth.js", "text/javascript")]
+        [TestCase("gutter.svg", "image/svg+xml")]
+        [TestCase("ocularr.svg", "image/svg+xml")]
+        public async Task the_page_assets_are_served(string file, string type)
+        {
+            using var factory = OAuthService.Create(_tokens);
+
+            var response = await factory.Client().GetAsync($"/v1/oauth/assets/{file}");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                Assert.That(response.Content.Headers.ContentType.MediaType, Is.EqualTo(type));
+                Assert.That(response.Headers.GetValues("X-Content-Type-Options").Single(), Is.EqualTo("nosniff"));
+            });
+        }
+
+        [Test]
+        public async Task the_page_template_is_not_served()
+        {
+            using var factory = OAuthService.Create(_tokens);
+
+            var response = await factory.Client().GetAsync("/v1/oauth/assets/oauth.html");
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         }
 
         [Test]
@@ -272,6 +357,8 @@ namespace Ocularr.Update.API.Test
         [TestCase("OAuth:Providers:mangabaka:TokenUrl", "")]
         [TestCase("OAuth:Providers:mangabaka:ClientId", "")]
         [TestCase("OAuth:Providers:mangabaka:RedirectUrl", "not a url")]
+        [TestCase("OAuth:Providers:mangabaka:IconUrl", "http://icons.test/baka.svg")]
+        [TestCase("OAuth:Providers:mangabaka:IconUrl", "not a url")]
         public void an_incomplete_provider_stops_the_service_from_starting(string key, string value)
         {
             using var factory = OAuthService.Create(_tokens, new Dictionary<string, string> { [key] = value });
