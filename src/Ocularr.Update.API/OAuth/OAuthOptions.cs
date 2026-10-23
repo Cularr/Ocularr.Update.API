@@ -41,6 +41,9 @@ namespace Ocularr.Update.API.OAuth
 
         public string Scope { get; set; }
 
+        [Url]
+        public string Resource { get; set; }
+
         [Required]
         [Url]
         public string RedirectUrl { get; set; }

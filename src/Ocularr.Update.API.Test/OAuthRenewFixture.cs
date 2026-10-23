@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Json;
@@ -32,6 +33,18 @@ namespace Ocularr.Update.API.Test
                 Assert.That(body.GetProperty("expires_in").GetInt32(), Is.EqualTo(3600));
                 Assert.That(body.GetProperty("refresh_token").GetString(), Is.EqualTo("refresh 1"));
             });
+        }
+
+        [TestCase("https://api.test/v1", "https://api.test/v1")]
+        [TestCase(null, null)]
+        public async Task renew_sends_the_resource(string resource, string expected)
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:Resource"] = resource });
+
+            await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+
+            Assert.That(tokens.Requests.Single().Form.GetValueOrDefault("resource"), Is.EqualTo(expected));
         }
 
         [TestCase("")]

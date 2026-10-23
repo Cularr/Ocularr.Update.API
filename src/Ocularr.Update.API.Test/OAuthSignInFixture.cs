@@ -254,6 +254,23 @@ namespace Ocularr.Update.API.Test
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         }
 
+        [TestCase("https://api.test/v1", "https://api.test/v1")]
+        [TestCase(null, null)]
+        public async Task the_resource_is_sent_when_signing_in(string resource, string expected)
+        {
+            using var factory = OAuthService.Create(_tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:Resource"] = resource });
+            var client = factory.Client();
+            var query = await Authorize(client, "mangabaka");
+
+            await client.GetAsync($"/v1/oauth/mangabaka/auth?code=abc&state={Uri.EscapeDataString(query["state"])}");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(query.GetValueOrDefault("resource"), Is.EqualTo(expected));
+                Assert.That(_tokens.Requests.Single().Form.GetValueOrDefault("resource"), Is.EqualTo(expected));
+            });
+        }
+
         [Test]
         public async Task post_client_authentication_sends_the_secret_in_the_body()
         {

@@ -78,7 +78,8 @@ namespace Ocularr.Update.API.OAuth
                 redirectUri: settings.RedirectUrl,
                 state: _states.Protect(new OAuthState { Provider = provider, Callback = state, Verifier = verifier, Nonce = nonce }),
                 codeChallenge: settings.Pkce == PkceMethod.S256 ? Base64Url.EncodeToString(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))) : verifier,
-                codeChallengeMethod: settings.Pkce == PkceMethod.None ? null : settings.Pkce == PkceMethod.S256 ? "S256" : "plain");
+                codeChallengeMethod: settings.Pkce == PkceMethod.None ? null : settings.Pkce == PkceMethod.S256 ? "S256" : "plain",
+                extra: string.IsNullOrEmpty(settings.Resource) ? null : new Parameters { { OidcConstants.AuthorizeRequest.Resource, settings.Resource } });
 
             Response.Cookies.Append(NonceCookie, nonce, NonceCookieOptions());
             NoStore();
@@ -116,7 +117,8 @@ namespace Ocularr.Update.API.OAuth
                     ClientCredentialStyle = CredentialStyle(settings),
                     Code = code,
                     RedirectUri = settings.RedirectUrl,
-                    CodeVerifier = saved.Verifier
+                    CodeVerifier = saved.Verifier,
+                    Resource = Resources(settings)
                 },
                 cancellationToken);
 
@@ -150,7 +152,8 @@ namespace Ocularr.Update.API.OAuth
                     ClientId = settings.ClientId,
                     ClientSecret = settings.ClientSecret,
                     ClientCredentialStyle = CredentialStyle(settings),
-                    RefreshToken = refreshToken
+                    RefreshToken = refreshToken,
+                    Resource = Resources(settings)
                 },
                 cancellationToken);
 
@@ -171,6 +174,9 @@ namespace Ocularr.Update.API.OAuth
                 RefreshToken = response.RefreshToken
             });
         }
+
+        private static HashSet<string> Resources(OAuthProvider settings) =>
+            string.IsNullOrEmpty(settings.Resource) ? new () : new () { settings.Resource };
 
         private static bool IsRejectedToken(HttpStatusCode status, string error) =>
             status == HttpStatusCode.Unauthorized && error is OidcConstants.TokenErrors.InvalidGrant or OidcConstants.TokenErrors.InvalidRequest;
