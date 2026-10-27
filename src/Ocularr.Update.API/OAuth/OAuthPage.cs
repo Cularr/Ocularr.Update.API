@@ -28,7 +28,7 @@ namespace Ocularr.Update.API.OAuth
         public string Link { get; init; }
 
         public string ContentSecurityPolicy =>
-            $"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'{(string.IsNullOrEmpty(IconUrl) ? string.Empty : " " + new Uri(IconUrl).GetLeftPart(UriPartial.Authority))}; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+            $"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'{(OAuthIcons.IsRemote(IconUrl) ? " " + new Uri(IconUrl).GetLeftPart(UriPartial.Authority) : string.Empty)}; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
         public string Render(string pathBase)
         {
@@ -45,7 +45,7 @@ namespace Ocularr.Update.API.OAuth
             {
                 ["assets"] = pathBase + AssetsPath,
                 ["state"] = signedIn ? "signed-in" : "failed",
-                ["icon"] = IconUrl,
+                ["icon"] = OAuthIcons.IsLocal(IconUrl) ? $"{pathBase}{OAuthIcons.Path}/{IconUrl}" : IconUrl,
                 ["initial"] = Provider[..1].ToUpperInvariant(),
                 ["provider"] = Provider,
                 ["title"] = Title,

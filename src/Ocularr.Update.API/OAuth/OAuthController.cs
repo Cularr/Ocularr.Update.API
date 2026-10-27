@@ -179,7 +179,7 @@ namespace Ocularr.Update.API.OAuth
             string.IsNullOrEmpty(settings.Resource) ? new () : new () { settings.Resource };
 
         private static bool IsRejectedToken(HttpStatusCode status, string error) =>
-            status == HttpStatusCode.Unauthorized && error is OidcConstants.TokenErrors.InvalidGrant or OidcConstants.TokenErrors.InvalidRequest;
+            status == HttpStatusCode.Unauthorized && error is OidcConstants.TokenErrors.InvalidGrant or OidcConstants.TokenErrors.InvalidRequest or OidcConstants.ProtectedResourceErrors.InvalidToken;
 
         private static ClientCredentialStyle CredentialStyle(OAuthProvider settings) =>
             settings.ClientAuthentication == ClientAuthentication.Post ? ClientCredentialStyle.PostBody : ClientCredentialStyle.AuthorizationHeader;

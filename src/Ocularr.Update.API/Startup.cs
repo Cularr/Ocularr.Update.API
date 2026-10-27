@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -125,6 +127,23 @@ namespace Ocularr.Update.API
                 {
                     context.Context.Response.Headers.CacheControl = "public, max-age=3600";
                     context.Context.Response.Headers.XContentTypeOptions = "nosniff";
+                }
+            });
+
+            var icons = Path.Combine(UpdateConfig.DataDirectory, OAuthIcons.Directory);
+            Directory.CreateDirectory(icons);
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(icons),
+                RequestPath = OAuthIcons.Path,
+                ContentTypeProvider = new FileExtensionContentTypeProvider(new Dictionary<string, string>(OAuthIcons.ContentTypes, StringComparer.OrdinalIgnoreCase)),
+                ServeUnknownFileTypes = false,
+                OnPrepareResponse = context =>
+                {
+                    context.Context.Response.Headers.CacheControl = "public, max-age=3600";
+                    context.Context.Response.Headers.XContentTypeOptions = "nosniff";
+                    context.Context.Response.Headers.ContentSecurityPolicy = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
                 }
             });
 

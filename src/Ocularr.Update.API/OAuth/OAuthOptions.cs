@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 
 namespace Ocularr.Update.API.OAuth
@@ -54,8 +55,30 @@ namespace Ocularr.Update.API.OAuth
 
         public string Name { get; set; }
 
-        [Url]
         public string IconUrl { get; set; }
+    }
+
+    public static class OAuthIcons
+    {
+        public const string Path = "/v1/oauth/icons";
+        public const string Directory = "icons";
+
+        public static readonly IReadOnlyDictionary<string, string> ContentTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [".svg"] = "image/svg+xml",
+            [".png"] = "image/png",
+            [".webp"] = "image/webp",
+            [".jpg"] = "image/jpeg",
+            [".ico"] = "image/x-icon"
+        };
+
+        private static readonly Regex FileName = new (@"^[A-Za-z0-9][A-Za-z0-9._-]*$");
+
+        public static bool IsLocal(string icon) =>
+            !string.IsNullOrEmpty(icon) && FileName.IsMatch(icon) && ContentTypes.ContainsKey(System.IO.Path.GetExtension(icon));
+
+        public static bool IsRemote(string icon) =>
+            Uri.TryCreate(icon, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrEmpty(uri.Host);
     }
 
     public sealed class OAuthOptionsValidator : IValidateOptions<OAuthOptions>
@@ -72,9 +95,9 @@ namespace Ocularr.Update.API.OAuth
                 {
                     failures.AddRange(results.Select(x => $"OAuth:Providers:{provider}: {x.ErrorMessage}"));
                 }
-                else if (!string.IsNullOrEmpty(settings.IconUrl) && !settings.IconUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                else if (!string.IsNullOrEmpty(settings.IconUrl) && !OAuthIcons.IsRemote(settings.IconUrl) && !OAuthIcons.IsLocal(settings.IconUrl))
                 {
-                    failures.Add($"OAuth:Providers:{provider}: The IconUrl field must be an https URL.");
+                    failures.Add($"OAuth:Providers:{provider}: The IconUrl field must be an https URL or the file name of an svg, png, webp, jpg or ico in the icons directory.");
                 }
             }
 
