@@ -19,6 +19,8 @@ namespace Ocularr.Update.API.OAuth
 
         public string IconUrl { get; init; }
 
+        public IconShape IconShape { get; init; }
+
         public string Title { get; init; }
 
         public string Message { get; init; }
@@ -45,6 +47,7 @@ namespace Ocularr.Update.API.OAuth
             {
                 ["assets"] = pathBase + AssetsPath,
                 ["state"] = signedIn ? "signed-in" : "failed",
+                ["shape"] = IconShape.ToString().ToLowerInvariant(),
                 ["icon"] = OAuthIcons.IsLocal(IconUrl) ? $"{pathBase}{OAuthIcons.Path}/{IconUrl}" : IconUrl,
                 ["initial"] = Provider[..1].ToUpperInvariant(),
                 ["provider"] = Provider,

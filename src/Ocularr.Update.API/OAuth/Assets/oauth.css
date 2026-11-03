@@ -105,12 +105,33 @@ main {
   object-fit: contain;
 }
 
-.mark.ocularr {
+.mark.square {
+  border-radius: 16px;
+}
+
+.mark.wide {
+  flex: 0 1 168px;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  min-width: 64px;
+  border-radius: 16px;
+}
+
+.mark.wide img {
+  padding: 8px 14px;
+}
+
+.mark.ocularr,
+.mark.fill {
   border: 0;
   background: none;
 }
 
-.mark.ocularr img {
+.mark.fill {
+  overflow: visible;
+}
+
+.mark.ocularr img,
+.mark.fill img {
   padding: 0;
 }
 

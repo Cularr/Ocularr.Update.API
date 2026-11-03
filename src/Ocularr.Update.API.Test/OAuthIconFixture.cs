@@ -40,6 +40,34 @@ namespace Ocularr.Update.API.Test
             });
         }
 
+        [TestCase(null, "round")]
+        [TestCase("Round", "round")]
+        [TestCase("Fill", "fill")]
+        [TestCase("Square", "square")]
+        [TestCase("wide", "wide")]
+        public async Task the_icon_box_takes_the_configured_shape(string shape, string expected)
+        {
+            using var factory = OAuthService.Create(_tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:IconUrl"] = "baka.svg", ["OAuth:Providers:mangabaka:IconShape"] = shape });
+
+            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/auth?state=x");
+            var page = await response.Content.ReadAsStringAsync();
+
+            Assert.That(page, Does.Contain($"<div class=\"mark {expected}\">"));
+        }
+
+        [TestCase("Oval")]
+        [TestCase("7")]
+        [TestCase("+1")]
+        [TestCase(" Wide")]
+        [TestCase("Wide ")]
+        [TestCase("Round,Wide")]
+        public void an_unknown_icon_shape_stops_the_service_from_starting(string shape)
+        {
+            using var factory = OAuthService.Create(_tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:IconShape"] = shape });
+
+            Assert.That(() => factory.CreateClient(), Throws.Exception.With.Message.Contains("IconShape"));
+        }
+
         [Test]
         public async Task an_icon_is_served_as_an_image_that_cannot_run_scripts()
         {

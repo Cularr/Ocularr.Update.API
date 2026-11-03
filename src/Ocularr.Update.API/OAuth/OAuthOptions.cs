@@ -20,6 +20,14 @@ namespace Ocularr.Update.API.OAuth
         None
     }
 
+    public enum IconShape
+    {
+        Round,
+        Fill,
+        Square,
+        Wide
+    }
+
     public class OAuthOptions
     {
         public Dictionary<string, OAuthProvider> Providers { get; set; } = new (StringComparer.OrdinalIgnoreCase);
@@ -56,6 +64,8 @@ namespace Ocularr.Update.API.OAuth
         public string Name { get; set; }
 
         public string IconUrl { get; set; }
+
+        public string IconShape { get; set; }
     }
 
     public static class OAuthIcons
@@ -76,6 +86,13 @@ namespace Ocularr.Update.API.OAuth
 
         public static bool IsLocal(string icon) =>
             !string.IsNullOrEmpty(icon) && FileName.IsMatch(icon) && ContentTypes.ContainsKey(System.IO.Path.GetExtension(icon));
+
+        public static bool TryShape(string value, out IconShape shape)
+        {
+            var name = string.IsNullOrEmpty(value) ? nameof(IconShape.Round) : Enum.GetNames<IconShape>().FirstOrDefault(x => string.Equals(x, value, StringComparison.OrdinalIgnoreCase));
+            shape = name == null ? IconShape.Round : Enum.Parse<IconShape>(name);
+            return name != null;
+        }
 
         public static bool IsRemote(string icon) =>
             Uri.TryCreate(icon, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps && !string.IsNullOrEmpty(uri.Host);
@@ -98,6 +115,10 @@ namespace Ocularr.Update.API.OAuth
                 else if (!string.IsNullOrEmpty(settings.IconUrl) && !OAuthIcons.IsRemote(settings.IconUrl) && !OAuthIcons.IsLocal(settings.IconUrl))
                 {
                     failures.Add($"OAuth:Providers:{provider}: The IconUrl field must be an https URL or the file name of an svg, png, webp, jpg or ico in the icons directory.");
+                }
+                else if (!OAuthIcons.TryShape(settings.IconShape, out _))
+                {
+                    failures.Add($"OAuth:Providers:{provider}: The IconShape field must be Round, Fill, Square or Wide.");
                 }
             }
 

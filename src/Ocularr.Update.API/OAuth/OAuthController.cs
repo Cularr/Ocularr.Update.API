@@ -207,6 +207,7 @@ namespace Ocularr.Update.API.OAuth
             {
                 Provider = string.IsNullOrWhiteSpace(settings.Name) ? provider : settings.Name,
                 IconUrl = settings.IconUrl,
+                IconShape = OAuthIcons.TryShape(settings.IconShape, out var shape) ? shape : IconShape.Round,
                 Title = title,
                 Message = message,
                 Address = callback,
