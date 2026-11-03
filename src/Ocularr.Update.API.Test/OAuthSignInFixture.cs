@@ -339,7 +339,7 @@ namespace Ocularr.Update.API.Test
         [TestCase(HttpStatusCode.BadRequest, "{\"error\":\"invalid_grant\"}")]
         [TestCase(HttpStatusCode.OK, "{\"token_type\":\"Bearer\"}")]
         [TestCase(HttpStatusCode.InternalServerError, "oops")]
-        public async Task a_failed_exchange_is_a_bad_gateway(HttpStatusCode status, string body)
+        public async Task a_failed_exchange_shows_the_failure_page_with_a_status_proxies_pass_through(HttpStatusCode status, string body)
         {
             _tokens.StatusCode = status;
             _tokens.Body = body;
@@ -349,7 +349,11 @@ namespace Ocularr.Update.API.Test
 
             var response = await client.GetAsync($"/v1/oauth/mangabaka/auth?code=abc&state={Uri.EscapeDataString(state)}");
 
-            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadGateway));
+            Assert.Multiple(async () =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.InternalServerError));
+                Assert.That(await response.Content.ReadAsStringAsync(), Does.Contain("Sign-in failed"));
+            });
         }
 
         [Test]

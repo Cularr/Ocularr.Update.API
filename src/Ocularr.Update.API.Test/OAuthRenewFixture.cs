@@ -78,11 +78,11 @@ namespace Ocularr.Update.API.Test
         [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadRequest, "invalid_grant")]
         [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_request\",\"message\":\"The refresh token is invalid.\"}", HttpStatusCode.BadRequest, "invalid_request")]
         [TestCase(HttpStatusCode.Unauthorized, "{\"message\":\"Invalid refresh token\",\"error\":\"invalid_token\",\"error_description\":\"Invalid refresh token\"}", HttpStatusCode.BadRequest, "invalid_token")]
-        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_client\"}", HttpStatusCode.BadGateway, null)]
-        [TestCase(HttpStatusCode.Unauthorized, "<html>", HttpStatusCode.BadGateway, null)]
-        [TestCase(HttpStatusCode.Forbidden, "{\"error\":\"invalid_grant\"}", HttpStatusCode.BadGateway, null)]
-        [TestCase(HttpStatusCode.InternalServerError, "{\"error\":\"server_error\"}", HttpStatusCode.BadGateway, null)]
-        [TestCase(HttpStatusCode.BadGateway, "<html>", HttpStatusCode.BadGateway, null)]
+        [TestCase(HttpStatusCode.Unauthorized, "{\"error\":\"invalid_client\"}", HttpStatusCode.InternalServerError, null)]
+        [TestCase(HttpStatusCode.Unauthorized, "<html>", HttpStatusCode.InternalServerError, null)]
+        [TestCase(HttpStatusCode.Forbidden, "{\"error\":\"invalid_grant\"}", HttpStatusCode.InternalServerError, null)]
+        [TestCase(HttpStatusCode.InternalServerError, "{\"error\":\"server_error\"}", HttpStatusCode.InternalServerError, null)]
+        [TestCase(HttpStatusCode.BadGateway, "<html>", HttpStatusCode.InternalServerError, null)]
         public async Task upstream_failures_are_reported(HttpStatusCode upstream, string body, HttpStatusCode expected, string expectedError)
         {
             var tokens = new FakeTokenEndpoint { StatusCode = upstream, Body = body };

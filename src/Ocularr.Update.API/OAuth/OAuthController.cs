@@ -124,7 +124,7 @@ namespace Ocularr.Update.API.OAuth
 
             if (response.IsError || string.IsNullOrEmpty(response.AccessToken))
             {
-                return Page(502, provider, settings, "Sign-in failed", "The sign-in could not be completed. Start it again from Ocularr.");
+                return Page(StatusCodes.Status500InternalServerError, provider, settings, "Sign-in failed", "The sign-in could not be completed. Start it again from Ocularr.");
             }
 
             var link = QueryHelpers.AddQueryString(saved.Callback, new Dictionary<string, string>
@@ -163,7 +163,7 @@ namespace Ocularr.Update.API.OAuth
             {
                 var error = response.TryGet(OidcConstants.TokenResponse.Error);
 
-                return response.ErrorType == ResponseErrorType.Protocol || IsRejectedToken(response.HttpStatusCode, error) ? BadRequest(new { error }) : StatusCode(502);
+                return response.ErrorType == ResponseErrorType.Protocol || IsRejectedToken(response.HttpStatusCode, error) ? BadRequest(new { error }) : StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             return Ok(new OAuthToken
