@@ -29,6 +29,10 @@ namespace Ocularr.Update.API.OAuth
 
         public string Link { get; init; }
 
+        public string Detail { get; init; }
+
+        public string Reference { get; init; }
+
         public string ContentSecurityPolicy =>
             $"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'{(OAuthIcons.IsRemote(IconUrl) ? " " + new Uri(IconUrl).GetLeftPart(UriPartial.Authority) : string.Empty)}; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
@@ -42,6 +46,7 @@ namespace Ocularr.Update.API.OAuth
             page = Section(page, "failed", !signedIn);
             page = Section(page, "icon", !string.IsNullOrEmpty(IconUrl));
             page = Section(page, "monogram", string.IsNullOrEmpty(IconUrl));
+            page = Section(page, "detail", !string.IsNullOrEmpty(Detail));
 
             var values = new Dictionary<string, string>
             {
@@ -54,7 +59,9 @@ namespace Ocularr.Update.API.OAuth
                 ["title"] = Title,
                 ["message"] = Message,
                 ["address"] = Address,
-                ["link"] = Link
+                ["link"] = Link,
+                ["detail"] = Detail,
+                ["reference"] = Reference
             };
 
             return Placeholder.Replace(page, x => html.Encode(values[x.Groups[1].Value] ?? string.Empty));

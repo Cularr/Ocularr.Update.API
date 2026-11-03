@@ -20,6 +20,7 @@ using Ocularr.Update.API.Release;
 using Ocularr.Update.API.Release.Github;
 using Ocularr.Update.API.Stats;
 using Ocularr.Update.API.TaskQueue;
+using Ocularr.Update.API.Util;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Serilog;
@@ -120,6 +121,8 @@ namespace Ocularr.Update.API
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseMiddleware<RequestIdMiddleware>();
 
             app.UseSerilogRequestLogging();
 

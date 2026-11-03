@@ -30,6 +30,10 @@
     <p class="eyebrow">{{provider}} &rarr; Ocularr</p>
     <h1>{{title}}</h1>
     <p class="lead">{{message}}</p>
+    {{#detail}}
+    <code class="detail">{{detail}}</code>
+    <p class="reference">Reference {{reference}}</p>
+    {{/detail}}
     {{#signed-in}}
     <code class="address">{{address}}</code>
     <div class="actions">

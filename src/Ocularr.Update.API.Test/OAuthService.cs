@@ -13,7 +13,7 @@ namespace Ocularr.Update.API.Test
         public const string Callback = "https://ocularr.home.test:8787/oauth.html";
         public const string RedirectUrl = "https://system.test/v1/oauth/mangabaka/auth";
 
-        public static ServiceFactory Create(FakeTokenEndpoint tokens, Dictionary<string, string> settings = null)
+        public static ServiceFactory Create(FakeTokenEndpoint tokens, Dictionary<string, string> settings = null, System.Action<IServiceCollection> services = null)
         {
             var all = new Dictionary<string, string>
             {
@@ -34,7 +34,11 @@ namespace Ocularr.Update.API.Test
                 all[key] = value;
             }
 
-            return new ServiceFactory(all, x => x.AddHttpClient(nameof(OAuthController)).ConfigurePrimaryHttpMessageHandler(() => tokens));
+            return new ServiceFactory(all, x =>
+            {
+                x.AddHttpClient(nameof(OAuthController)).ConfigurePrimaryHttpMessageHandler(() => tokens);
+                services?.Invoke(x);
+            });
         }
 
         public static HttpClient Client(this ServiceFactory factory) =>

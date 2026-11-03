@@ -19,8 +19,15 @@ namespace Ocularr.Update.API.Test
 
         public List<string> UserAgents { get; } = new ();
 
+        public System.Exception Failure { get; set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            if (Failure != null)
+            {
+                throw Failure;
+            }
+
             var form = QueryHelpers.ParseQuery(await request.Content.ReadAsStringAsync(cancellationToken)).ToDictionary(x => x.Key, x => x.Value.ToString());
             Requests.Add((request.RequestUri.ToString(), request.Headers.Authorization?.ToString(), form));
             UserAgents.Add(request.Headers.UserAgent.ToString());

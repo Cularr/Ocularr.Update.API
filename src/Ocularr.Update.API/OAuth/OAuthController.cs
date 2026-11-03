@@ -3,10 +3,12 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +18,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Ocularr.Update.API.Util;
 
@@ -43,16 +46,19 @@ namespace Ocularr.Update.API.OAuth
     {
         public const string RateLimitPolicy = "oauth";
         public const string NonceCookie = "ocularr_oauth";
+        public const int MaxDetailLength = 300;
 
         private readonly OAuthOptions _options;
         private readonly OAuthStateProtector _states;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<OAuthController> _logger;
 
-        public OAuthController(IOptions<OAuthOptions> options, OAuthStateProtector states, IHttpClientFactory httpClientFactory)
+        public OAuthController(IOptions<OAuthOptions> options, OAuthStateProtector states, IHttpClientFactory httpClientFactory, ILogger<OAuthController> logger)
         {
             _options = options.Value;
             _states = states;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
         [HttpGet("authorize")]
@@ -124,7 +130,11 @@ namespace Ocularr.Update.API.OAuth
 
             if (response.IsError || string.IsNullOrEmpty(response.AccessToken))
             {
-                return Page(StatusCodes.Status500InternalServerError, provider, settings, "Sign-in failed", "The sign-in could not be completed. Start it again from Ocularr.");
+                var detail = Describe(response, settings.ClientSecret, code, saved.Verifier);
+                var requestId = RequestIdMiddleware.For(HttpContext);
+                _logger.LogWarning("{Provider} token exchange failed with HTTP {Status}: {Detail} (request {RequestId})", provider, (int)response.HttpStatusCode, detail, requestId);
+
+                return Page(StatusCodes.Status500InternalServerError, provider, settings, "Sign-in failed", "The sign-in could not be completed. Start it again from Ocularr.", detail: detail, reference: requestId);
             }
 
             var link = QueryHelpers.AddQueryString(saved.Callback, new Dictionary<string, string>
@@ -161,9 +171,12 @@ namespace Ocularr.Update.API.OAuth
 
             if (response.IsError)
             {
-                var error = response.TryGet(OidcConstants.TokenResponse.Error);
+                var error = Field(response, OidcConstants.TokenResponse.Error);
+                var rejected = response.ErrorType == ResponseErrorType.Protocol || IsRejectedToken(response.HttpStatusCode, error);
+                var level = rejected ? LogLevel.Information : LogLevel.Warning;
+                _logger.Log(level, "{Provider} token renewal failed with HTTP {Status}: {Detail} (request {RequestId})", provider, (int)response.HttpStatusCode, Describe(response, settings.ClientSecret, refreshToken), RequestIdMiddleware.For(HttpContext));
 
-                return response.ErrorType == ResponseErrorType.Protocol || IsRejectedToken(response.HttpStatusCode, error) ? BadRequest(new { error }) : StatusCode(StatusCodes.Status500InternalServerError);
+                return rejected ? BadRequest(new { error }) : StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             return Ok(new OAuthToken
@@ -173,6 +186,32 @@ namespace Ocularr.Update.API.OAuth
                 ExpiresIn = response.ExpiresIn,
                 RefreshToken = response.RefreshToken
             });
+        }
+
+        private static string Field(ProtocolResponse response, string name) =>
+            response.Json is { ValueKind: JsonValueKind.Object } ? response.TryGet(name) : null;
+
+        private static string Describe(ProtocolResponse response, params string[] secrets)
+        {
+            var error = Field(response, OidcConstants.TokenResponse.Error);
+            var text = Field(response, "hint") ?? Field(response, OidcConstants.TokenResponse.ErrorDescription);
+            var detail = response switch
+            {
+                { IsError: false } => "The response contained no access token",
+                _ when !string.IsNullOrEmpty(error) && !string.IsNullOrEmpty(text) => $"{error}: {text}",
+                _ when !string.IsNullOrEmpty(error) => error,
+                _ when response.HttpStatusCode != 0 => $"HTTP {(int)response.HttpStatusCode}",
+                _ => string.IsNullOrEmpty(response.Error) ? "No response" : response.Error
+            };
+
+            foreach (var secret in secrets.Where(x => !string.IsNullOrEmpty(x)).OrderByDescending(x => x.Length))
+            {
+                detail = detail.Replace(secret, "***", StringComparison.Ordinal);
+            }
+
+            detail = new string(detail.Select(x => char.IsControl(x) ? ' ' : x).ToArray());
+
+            return detail.Length > MaxDetailLength ? detail[..MaxDetailLength] : detail;
         }
 
         private static HashSet<string> Resources(OAuthProvider settings) =>
@@ -201,7 +240,7 @@ namespace Ocularr.Update.API.OAuth
             Response.Headers.Pragma = "no-cache";
         }
 
-        private ContentResult Page(int statusCode, string provider, OAuthProvider settings, string title, string message, string callback = null, string link = null)
+        private ContentResult Page(int statusCode, string provider, OAuthProvider settings, string title, string message, string callback = null, string link = null, string detail = null, string reference = null)
         {
             var page = new OAuthPage
             {
@@ -211,7 +250,9 @@ namespace Ocularr.Update.API.OAuth
                 Title = title,
                 Message = message,
                 Address = callback,
-                Link = link
+                Link = link,
+                Detail = detail,
+                Reference = reference
             };
 
             NoStore();

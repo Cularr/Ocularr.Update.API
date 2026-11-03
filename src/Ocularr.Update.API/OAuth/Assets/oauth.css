@@ -235,6 +235,24 @@ h1 {
   word-break: break-all;
 }
 
+.detail {
+  display: block;
+  margin: 16px 0 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--error);
+  font: 500 13px/1.45 ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.reference {
+  margin: 0;
+  color: var(--faint);
+  font-size: 12px;
+}
+
 .actions {
   display: grid;
   gap: 8px;
