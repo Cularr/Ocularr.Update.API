@@ -35,6 +35,17 @@ namespace Ocularr.Update.API.Test
             });
         }
 
+        [Test]
+        public async Task renew_identifies_itself_with_the_build_version()
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens);
+
+            await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+
+            Assert.That(tokens.UserAgents.Single(), Is.EqualTo($"Ocularr API/{ApiInfo.Version}"));
+        }
+
         [TestCase("https://api.test/v1", "https://api.test/v1")]
         [TestCase(null, null)]
         public async Task renew_sends_the_resource(string resource, string expected)

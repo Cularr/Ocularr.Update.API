@@ -90,7 +90,11 @@ namespace Ocularr.Update.API
             services.AddOptions<OAuthOptions>().Bind(Config.GetSection("OAuth")).ValidateOnStart();
             services.AddSingleton<IValidateOptions<OAuthOptions>, OAuthOptionsValidator>();
             services.AddSingleton<OAuthStateProtector>();
-            services.AddHttpClient(nameof(OAuthController), client => client.Timeout = TimeSpan.FromSeconds(30));
+            services.AddHttpClient(nameof(OAuthController), client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd($"Ocularr API/{ApiInfo.Version}");
+            });
             services.AddDataProtection()
                 .SetApplicationName("Ocularr.Update.API")
                 .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(UpdateConfig.DataDirectory, "keys")));

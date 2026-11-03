@@ -17,10 +17,13 @@ namespace Ocularr.Update.API.Test
 
         public List<(string Url, string Authorization, Dictionary<string, string> Form)> Requests { get; } = new ();
 
+        public List<string> UserAgents { get; } = new ();
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var form = QueryHelpers.ParseQuery(await request.Content.ReadAsStringAsync(cancellationToken)).ToDictionary(x => x.Key, x => x.Value.ToString());
             Requests.Add((request.RequestUri.ToString(), request.Headers.Authorization?.ToString(), form));
+            UserAgents.Add(request.Headers.UserAgent.ToString());
 
             return new HttpResponseMessage(StatusCode) { Content = new StringContent(Body, Encoding.UTF8, "application/json") };
         }
