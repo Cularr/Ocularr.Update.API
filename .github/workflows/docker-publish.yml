@@ -19,7 +19,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
 
     steps:
@@ -116,32 +116,3 @@ jobs:
             AUTHOR=${{ github.repository_owner }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          generate_release_notes: true
-          body: |
-            ## 🐳 Docker Image
-
-            Pull the Docker image:
-            ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_info.outputs.version }}
-            ```
-
-            Or for the branch-specific image:
-            ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git_info.outputs.branch }}
-            ```
-
-            ## 📦 Build Information
-            - **Version:** ${{ steps.git_info.outputs.version }}
-            - **Branch:** ${{ steps.git_info.outputs.branch }}
-            - **Commit:** ${{ steps.git_info.outputs.commit }}
-            - **Repository:** ${{ steps.git_info.outputs.repo_url }}
-
-            ## What's Changed
-            See the commit history for details.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
