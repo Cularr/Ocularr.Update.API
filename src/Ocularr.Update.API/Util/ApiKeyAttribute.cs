@@ -1,6 +1,4 @@
 using System;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,14 +14,10 @@ namespace Ocularr.Update.API.Util
             var expected = context.HttpContext.RequestServices.GetRequiredService<IOptions<Config>>().Value.ApiKey;
             var given = context.HttpContext.Request.Headers["X-Api-Key"].ToString();
 
-            if (!Matches(expected, given))
+            if (!SecretComparer.Matches(expected, given))
             {
                 context.Result = new UnauthorizedResult();
             }
         }
-
-        public static bool Matches(string expected, string given) =>
-            !string.IsNullOrEmpty(expected) &&
-            CryptographicOperations.FixedTimeEquals(SHA256.HashData(Encoding.UTF8.GetBytes(expected)), SHA256.HashData(Encoding.UTF8.GetBytes(given ?? string.Empty)));
     }
 }

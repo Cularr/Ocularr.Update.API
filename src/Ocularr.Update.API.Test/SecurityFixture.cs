@@ -21,12 +21,12 @@ namespace Ocularr.Update.API.Test
         [TestCase("", false)]
         [TestCase(null, false)]
         public void api_keys_must_match_exactly(string given, bool expected) =>
-            Assert.That(ApiKeyAttribute.Matches("test-key", given), Is.EqualTo(expected));
+            Assert.That(SecretComparer.Matches("test-key", given), Is.EqualTo(expected));
 
         [TestCase("")]
         [TestCase(null)]
         public void an_empty_expected_key_matches_nothing(string expected) =>
-            Assert.That(ApiKeyAttribute.Matches(expected, string.Empty), Is.False);
+            Assert.That(SecretComparer.Matches(expected, string.Empty), Is.False);
 
         [TestCase(null)]
         [TestCase("wrong")]

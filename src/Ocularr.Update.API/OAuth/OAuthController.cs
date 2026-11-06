@@ -104,7 +104,7 @@ namespace Ocularr.Update.API.OAuth
             var nonce = Request.Cookies[NonceCookie];
             Response.Cookies.Delete(NonceCookie, NonceCookieOptions());
 
-            if (saved == null || !string.Equals(saved.Provider, provider, StringComparison.OrdinalIgnoreCase) || !ApiKeyAttribute.Matches(saved.Nonce, nonce))
+            if (saved == null || !string.Equals(saved.Provider, provider, StringComparison.OrdinalIgnoreCase) || !SecretComparer.Matches(saved.Nonce, nonce))
             {
                 return Page(400, provider, settings, "Sign-in expired", "This sign-in has expired or is invalid. Start it again from Ocularr.");
             }
