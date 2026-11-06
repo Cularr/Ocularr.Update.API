@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace Ocularr.Update.API.Test
             var tokens = new FakeTokenEndpoint();
             using var factory = OAuthService.Create(tokens);
 
-            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old%20token");
+            var response = await OAuthService.Renew(factory.Client(), "old token");
             var body = await response.Content.ReadFromJsonAsync<JsonElement>();
             var request = tokens.Requests.Single();
 
@@ -41,7 +42,7 @@ namespace Ocularr.Update.API.Test
             var tokens = new FakeTokenEndpoint();
             using var factory = OAuthService.Create(tokens);
 
-            await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+            await OAuthService.Renew(factory.Client());
 
             Assert.That(tokens.UserAgents.Single(), Is.EqualTo($"Ocularr API/{ApiInfo.Version}"));
         }
@@ -53,19 +54,58 @@ namespace Ocularr.Update.API.Test
             var tokens = new FakeTokenEndpoint();
             using var factory = OAuthService.Create(tokens, new Dictionary<string, string> { ["OAuth:Providers:mangabaka:Resource"] = resource });
 
-            await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+            await OAuthService.Renew(factory.Client());
 
             Assert.That(tokens.Requests.Single().Form.GetValueOrDefault("resource"), Is.EqualTo(expected));
         }
 
-        [TestCase("")]
-        [TestCase("?refresh_token=")]
-        public async Task renew_requires_a_refresh_token(string query)
+        [Test]
+        public async Task renew_does_not_accept_a_token_in_the_url()
         {
             var tokens = new FakeTokenEndpoint();
             using var factory = OAuthService.Create(tokens);
 
-            var response = await factory.Client().GetAsync($"/v1/oauth/mangabaka/renew{query}");
+            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.MethodNotAllowed));
+                Assert.That(tokens.Requests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task renew_ignores_a_token_in_the_query_of_a_post()
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens);
+
+            var response = await factory.Client().PostAsync("/v1/oauth/mangabaka/renew?refresh_token=old", new FormUrlEncodedContent(new Dictionary<string, string>()));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                Assert.That(tokens.Requests, Is.Empty);
+            });
+        }
+
+        [Test]
+        public async Task renew_for_an_unknown_provider_is_not_found()
+        {
+            using var factory = OAuthService.Create(new FakeTokenEndpoint());
+
+            var response = await OAuthService.Renew(factory.Client(), provider: "anilist");
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        }
+
+        [Test]
+        public async Task renew_requires_a_refresh_token()
+        {
+            var tokens = new FakeTokenEndpoint();
+            using var factory = OAuthService.Create(tokens);
+
+            var response = await OAuthService.Renew(factory.Client(), string.Empty);
 
             Assert.Multiple(() =>
             {
@@ -88,7 +128,7 @@ namespace Ocularr.Update.API.Test
             var tokens = new FakeTokenEndpoint { StatusCode = upstream, Body = body };
             using var factory = OAuthService.Create(tokens);
 
-            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+            var response = await OAuthService.Renew(factory.Client());
             var content = await response.Content.ReadAsStringAsync();
 
             Assert.Multiple(() =>
@@ -115,7 +155,7 @@ namespace Ocularr.Update.API.Test
             var statuses = new HttpStatusCode[11];
             for (var i = 0; i < statuses.Length; i++)
             {
-                statuses[i] = (await client.GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old")).StatusCode;
+                statuses[i] = (await OAuthService.Renew(client)).StatusCode;
             }
 
             Assert.Multiple(async () =>

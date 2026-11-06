@@ -127,7 +127,7 @@ namespace Ocularr.Update.API.Test
             _tokens.Body = "{\"error\":\"server_error\",\"error_description\":\"Database down\"}";
             using var factory = Create();
 
-            var response = await factory.Client().GetAsync("/v1/oauth/mangabaka/renew?refresh_token=old");
+            var response = await OAuthService.Renew(factory.Client());
             var warning = _logger.Entries.Single(x => x.Level == LogLevel.Warning).Message;
 
             Assert.Multiple(() =>

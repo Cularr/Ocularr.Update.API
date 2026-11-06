@@ -147,8 +147,9 @@ namespace Ocularr.Update.API.OAuth
             return Page(200, provider, settings, "Signed in", "Continue only if you started this sign-in from your Ocularr at this address:", saved.Callback, link);
         }
 
-        [HttpGet("renew")]
-        public async Task<IActionResult> Renew([FromRoute] string provider, [FromQuery(Name = "refresh_token")][Required] string refreshToken, CancellationToken cancellationToken)
+        [HttpPost("renew")]
+        [Consumes("application/x-www-form-urlencoded")]
+        public async Task<IActionResult> Renew([FromRoute] string provider, [FromForm(Name = "refresh_token")][Required] string refreshToken, CancellationToken cancellationToken)
         {
             if (!_options.Providers.TryGetValue(provider, out var settings))
             {

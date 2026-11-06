@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +13,9 @@ namespace Ocularr.Update.API.Test
     {
         public const string Callback = "https://ocularr.home.test:8787/oauth.html";
         public const string RedirectUrl = "https://system.test/v1/oauth/mangabaka/auth";
+
+        public static Task<HttpResponseMessage> Renew(HttpClient client, string refreshToken = "old", string provider = "mangabaka") =>
+            client.PostAsync($"/v1/oauth/{provider}/renew", new FormUrlEncodedContent(new Dictionary<string, string> { ["refresh_token"] = refreshToken }));
 
         public static ServiceFactory Create(FakeTokenEndpoint tokens, Dictionary<string, string> settings = null, System.Action<IServiceCollection> services = null)
         {

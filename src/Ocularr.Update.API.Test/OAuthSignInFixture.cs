@@ -124,7 +124,6 @@ namespace Ocularr.Update.API.Test
 
         [TestCase("authorize?state=https%3A%2F%2Focularr.test%2Foauth.html")]
         [TestCase("auth?code=abc&state=x")]
-        [TestCase("renew?refresh_token=x")]
         public async Task an_unknown_provider_is_not_found(string path)
         {
             using var factory = OAuthService.Create(_tokens);
