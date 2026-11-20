@@ -29,6 +29,7 @@ jobs:
 
     env:
       UPDATE_API_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=postgres
+      DOTNET_hostBuilder__reloadConfigOnChange: "false"
 
     steps:
       - name: Checkout repository
